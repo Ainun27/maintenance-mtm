@@ -1,0 +1,48 @@
+services:
+  # MQTT Broker (Mosquitto)
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: iot_mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+
+  # 1. PostgreSQL (TimescaleDB) untuk Data Time-Series Telemetri
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: iot_timescaledb
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: timescale_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_secret
+    volumes:
+      - timescaledb_data:/var/lib/postgresql/data
+      - ./init-timescale.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # 2. PostgreSQL untuk Monitoring Status & Alert Perangkat
+  postgres-monitoring:
+    image: postgres:16-alpine
+    container_name: iot_postgres_monitoring
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: monitoring_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_secret
+    volumes:
+      - monitoring_data:/var/lib/postgresql/data
+      - ./init-monitoring.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  mosquitto_data:
+  mosquitto_log:
+  timescaledb_data:
+  monitoring_data:

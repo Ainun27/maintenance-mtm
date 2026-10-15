@@ -1,0 +1,18 @@
+{
+  "name": "iot-mqtt-pipeline",
+  "version": "1.0.0",
+  "description": "Full-stack IoT MQTT to PostgreSQL (Timescale & Monitoring) Pipeline with MTM Dashboard",
+  "scripts": {
+    "start": "npm --prefix backend start",
+    "dev": "npm --prefix backend start",
+    "backend": "npm --prefix backend start",
+    "backend:build": "npm --prefix backend run build",
+    "frontend": "npm --prefix frontend run dev",
+    "simulator": "npm --prefix backend run simulator",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
+  },
+  "keywords": ["iot", "mqtt", "postgresql", "timescaledb", "typescript", "dashboard", "mtm"],
+  "author": "",
+  "license": "ISC"
+}
