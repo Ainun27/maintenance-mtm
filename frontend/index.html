@@ -137,54 +137,6 @@
 
         <div id="login-error-msg" class="login-error" style="display: none;"></div>
       </form>
-
-      <!-- Quick Access Shortcuts -->
-      <div class="quick-access-section">
-        <div class="quick-access-title">QUICK ACCESS SHORTCUT</div>
-        <div class="quick-access-grid">
-          <button type="button" class="quick-btn" onclick="quickLogin('PIC')">
-            <div class="quick-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-            </div>
-            <span class="quick-label">PIC</span>
-          </button>
-
-          <button type="button" class="quick-btn" onclick="quickLogin('Section')">
-            <div class="quick-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="4" width="18" height="16" rx="2"></rect>
-                <circle cx="9" cy="10" r="2"></circle>
-                <line x1="15" y1="8" x2="17" y2="8"></line>
-                <line x1="15" y1="12" x2="17" y2="12"></line>
-                <line x1="7" y1="16" x2="17" y2="16"></line>
-              </svg>
-            </div>
-            <span class="quick-label">Section</span>
-          </button>
-
-          <button type="button" class="quick-btn" onclick="quickLogin('Dept')">
-            <div class="quick-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-              </svg>
-            </div>
-            <span class="quick-label">Dept</span>
-          </button>
-
-          <button type="button" class="quick-btn" onclick="quickLogin('Guest')">
-            <div class="quick-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                <circle cx="12" cy="12" r="3"></circle>
-              </svg>
-            </div>
-            <span class="quick-label">Guest</span>
-          </button>
-        </div>
-      </div>
     </div>
 
     <!-- Floating Circular Badge N -->
@@ -215,6 +167,11 @@
           <span>Dashboard</span>
         </button>
 
+        <button class="nav-item" id="nav-monitoring" onclick="switchMainView('monitoring')" data-short="MON">
+          <span>Monitoring</span>
+          <span class="nav-live-indicator">LIVE</span>
+        </button>
+
         <button class="nav-item" id="nav-cm" onclick="switchMainView('cm')" data-short="CM">
           <span>Corrective Maint.</span>
         </button>
@@ -225,11 +182,6 @@
 
         <button class="nav-item" id="nav-pdm" onclick="switchMainView('pdm')" data-short="PdM">
           <span>Predictive (MPC)</span>
-        </button>
-
-        <button class="nav-item" id="nav-monitoring" onclick="switchMainView('monitoring')" data-short="MON">
-          <span>Monitoring</span>
-          <span class="nav-live-indicator">LIVE</span>
         </button>
 
         <button class="nav-item" id="nav-tpm" onclick="switchMainView('tpm')" data-short="TPM">
