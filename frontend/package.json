@@ -1,0 +1,12 @@
+{
+  "name": "mtm-maintenance-frontend",
+  "version": "1.0.0",
+  "description": "Maintenance Apps - PT Menara Terus Makmur",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "keywords": ["maintenance", "mtm", "astra-otoparts", "dashboard"],
+  "author": "",
+  "license": "ISC"
+}

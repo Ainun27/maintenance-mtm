@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MAINTENANCE APPS - PT Menara Terus Makmur | A Member of ASTRA Otoparts Group</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Text:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="assets/logo-mtm-icon.png">
+  <link rel="stylesheet" href="style.css?v=2.0.38">
+</head>
+<body>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- ======================================================== -->
+  <!-- LOGIN LOADING OVERLAY (Gear Spinner & Crossed Tools)     -->
+  <!-- ======================================================== -->
+  <div id="login-loading-overlay" class="login-loading-overlay" style="display: none;">
+    <div class="login-loader-modal">
+      <div class="login-loader-graphic">
+        <svg class="login-loader-svg" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- 1. Lingkaran Baut / Gear Berputar Terus-menerus (SVG Native + CSS Animation) -->
+          <g class="loader-spinning-gear">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="
+              M 177.81 94.56 L 189.91 96.07 L 189.91 103.93 L 177.81 105.44 L 175.68 118.87 L 186.73 124.05 L 184.30 131.52 L 172.32 129.22 L 166.15 141.33 L 175.05 149.67 L 170.43 156.03 L 159.75 150.14 L 150.14 159.75 L 156.03 170.43 L 149.67 175.05 L 141.33 166.15 L 129.22 172.32 L 131.52 184.30 L 124.05 186.73 L 118.87 175.68 L 105.44 177.81 L 103.93 189.91 L 96.07 189.91 L 94.56 177.81 L 81.13 175.68 L 75.95 186.73 L 68.48 184.30 L 70.78 172.32 L 58.67 166.15 L 50.33 175.05 L 43.97 170.43 L 49.86 159.75 L 40.25 150.14 L 29.57 156.03 L 24.95 149.67 L 33.85 141.33 L 27.68 129.22 L 15.70 131.52 L 13.27 124.05 L 24.32 118.87 L 22.19 105.44 L 10.09 103.93 L 10.09 96.07 L 22.19 94.56 L 24.32 81.13 L 13.27 75.95 L 15.70 68.48 L 27.68 70.78 L 33.85 58.67 L 24.95 50.33 L 29.57 43.97 L 40.25 49.86 L 49.86 40.25 L 43.97 29.57 L 50.33 24.95 L 58.67 33.85 L 70.78 27.68 L 68.48 15.70 L 75.95 13.27 L 81.13 24.32 L 94.56 22.19 L 96.07 10.09 L 103.93 10.09 L 105.44 22.19 L 118.87 24.32 L 124.05 13.27 L 131.52 15.70 L 129.22 27.68 L 141.33 33.85 L 149.67 24.95 L 156.03 29.57 L 150.14 40.25 L 159.75 49.86 L 170.43 43.97 L 175.05 50.33 L 166.15 58.67 L 172.32 70.78 L 184.30 68.48 L 186.73 75.95 L 175.68 81.13 Z
+              M 100 44 A 56 56 0 1 0 100 156 A 56 56 0 1 0 100 44 Z
+            " fill="#111827"/>
+            <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="2.4s" repeatCount="indefinite"/>
+          </g>
+
+          <!-- 2. Kunci Pas & Obeng Bersilang (Di Tengah Lingkaran Baut) -->
+          <g class="loader-static-tools">
+            <!-- Kunci Pas (Diagonal -45deg) -->
+            <g transform="rotate(-45 100 100)">
+              <rect x="48" y="93" width="104" height="14" rx="2" fill="#111827"/>
+              <!-- Rahang Kunci Pas Kiri Atas -->
+              <path d="M 52 82 C 40 82 30 89 30 100 C 30 111 40 118 52 118 C 57 118 63 115 67 111 L 52 100 L 67 89 C 63 85 57 82 52 82 Z" fill="#111827"/>
+              <!-- Rahang Kunci Pas Kanan Bawah -->
+              <path d="M 148 82 C 160 82 170 89 170 100 C 170 111 160 118 148 118 C 143 118 137 115 133 111 L 148 100 L 133 89 C 137 85 143 82 148 82 Z" fill="#111827"/>
+            </g>
+
+            <!-- Obeng (Diagonal 45deg) - dengan outline tebal putih pemisah persilangan -->
+            <g transform="rotate(45 100 100)">
+              <g stroke="#ffffff" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+                <!-- Gagang Obeng Beralur Ergonomis -->
+                <path d="M 34 93 C 34 90 38 86 46 86 L 75 86 C 80 86 84 90 87 93 L 90 93 L 90 107 L 87 107 C 84 110 80 114 75 114 L 46 114 C 38 114 34 110 34 107 Z" fill="#111827"/>
+                <!-- Batang Obeng Baja -->
+                <rect x="90" y="96" width="60" height="8" fill="#111827"/>
+                <!-- Ujung Bilah Obeng Pipih -->
+                <path d="M 150 95 L 166 96 L 166 104 L 150 105 Z" fill="#111827"/>
+              </g>
+              <!-- Aksen Garis Alur Gagang Obeng -->
+              <path d="M 42 93 L 70 93 M 42 100 L 74 100 M 42 107 L 70 107" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+            </g>
+          </g>
+        </svg>
+      </div>
+
+      <div class="login-loader-info">
+        <div class="login-loader-title">Memverifikasi & Menyiapkan Sistem...</div>
+        <div class="login-loader-corp">PT Menara Terus Makmur • A Member of ASTRA Otoparts Group</div>
+        <div class="login-loader-progress">
+          <div class="login-loader-progress-bar"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 1. LOGIN SCREEN (Matches Reference Image 2)              -->
+  <!-- ======================================================== -->
+  <div id="login-screen" class="login-container">
+    <div class="login-bg-overlay"></div>
+
+    <div class="login-card">
+      <!-- MTM & Astra Branding -->
+      <div class="login-header">
+        <div class="logo-geometric">
+          <!-- Stylized double wing logo -->
+          <svg width="44" height="28" viewBox="0 0 50 32" fill="none">
+            <path d="M0 16L18 0H32L14 16H0Z" fill="#111827"/>
+            <path d="M18 32L36 16H50L32 32H18Z" fill="#111827"/>
+          </svg>
+        </div>
+        <div class="logo-divider"></div>
+        <div class="logo-official-group">
+          <img src="assets/logo-mtm.jpg" alt="PT Menara Terus Makmur - Astra Otoparts" class="login-brand-logo-img">
+          <span class="app-official-name">MAINTENANCE APPS</span>
+        </div>
+      </div>
+
+      <!-- Login Form -->
+      <form id="login-form" class="login-form" onsubmit="handleLoginSubmit(event)">
+        <div class="form-group">
+          <label for="input-username" class="form-label">NPK OR USERNAME</label>
+          <input 
+            type="text" 
+            id="input-username" 
+            class="form-control" 
+            placeholder="admin" 
+            value="admin"
+            required
+            autocomplete="username"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="input-password" class="form-label">PASSWORD</label>
+          <div class="input-password-wrapper">
+            <input 
+              type="password" 
+              id="input-password" 
+              class="form-control" 
+              placeholder="••••••••" 
+              value="admin123"
+              required
+              autocomplete="current-password"
+            >
+            <button type="button" class="btn-toggle-password" onclick="togglePasswordVisibility()" title="Lihat password">
+              <svg id="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-login">
+          <span>Login</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>
+          </svg>
+        </button>
+
+        <div id="login-error-msg" class="login-error" style="display: none;"></div>
+      </form>
+
+      <!-- Quick Access Shortcuts -->
+      <div class="quick-access-section">
+        <div class="quick-access-title">QUICK ACCESS SHORTCUT</div>
+        <div class="quick-access-grid">
+          <button type="button" class="quick-btn" onclick="quickLogin('PIC')">
+            <div class="quick-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </div>
+            <span class="quick-label">PIC</span>
+          </button>
+
+          <button type="button" class="quick-btn" onclick="quickLogin('Section')">
+            <div class="quick-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                <circle cx="9" cy="10" r="2"></circle>
+                <line x1="15" y1="8" x2="17" y2="8"></line>
+                <line x1="15" y1="12" x2="17" y2="12"></line>
+                <line x1="7" y1="16" x2="17" y2="16"></line>
+              </svg>
+            </div>
+            <span class="quick-label">Section</span>
+          </button>
+
+          <button type="button" class="quick-btn" onclick="quickLogin('Dept')">
+            <div class="quick-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </div>
+            <span class="quick-label">Dept</span>
+          </button>
+
+          <button type="button" class="quick-btn" onclick="quickLogin('Guest')">
+            <div class="quick-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </div>
+            <span class="quick-label">Guest</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating Circular Badge N -->
+    <div class="floating-badge-n" title="PT Menara Terus Makmur">
+      <span>N</span>
+    </div>
+  </div>
+
+
+  <!-- ======================================================== -->
+  <!-- 2. MAIN APPLICATION LAYOUT                               -->
+  <!-- ======================================================== -->
+  <div id="main-app" class="app-layout" style="display: none;">
+    
+    <!-- SIDEBAR (Putih & Biru - MTM Corporate) -->
+    <aside class="sidebar" id="app-sidebar">
+      <!-- Top Brand -->
+      <div class="sidebar-brand">
+        <div class="brand-mtm-logo-full">
+          <img src="assets/logo-mtm.jpg" alt="PT Menara Terus Makmur - ASTRA Otoparts Group" class="sidebar-mtm-full-img">
+          <span class="brand-app-name-tag">MAINTENANCE APPS</span>
+        </div>
+      </div>
+
+      <!-- Navigation Menu -->
+      <nav class="sidebar-nav">
+        <button class="nav-item active" id="nav-dashboard" onclick="switchMainView('dashboard')" data-short="DB">
+          <span>Dashboard</span>
+        </button>
+
+        <button class="nav-item" id="nav-cm" onclick="switchMainView('cm')" data-short="CM">
+          <span>Corrective Maint.</span>
+        </button>
+
+        <button class="nav-item" id="nav-pm" onclick="switchMainView('pm')" data-short="PM">
+          <span>Preventive Maint.</span>
+        </button>
+
+        <button class="nav-item" id="nav-pdm" onclick="switchMainView('pdm')" data-short="PdM">
+          <span>Predictive (MPC)</span>
+        </button>
+
+        <button class="nav-item" id="nav-monitoring" onclick="switchMainView('monitoring')" data-short="MON">
+          <span>Monitoring</span>
+          <span class="nav-live-indicator">LIVE</span>
+        </button>
+
+        <button class="nav-item" id="nav-tpm" onclick="switchMainView('tpm')" data-short="TPM">
+          <span>TPM Control</span>
+        </button>
+      </nav>
+
+      <!-- Maintenance Tools Silhouette & Shadow (High Definition Sculpted) -->
+      <div class="sidebar-tools-silhouette" aria-hidden="true">
+        <svg viewBox="0 0 260 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- 1. Industrial Precision Spur Gear in Background -->
+          <g class="tool-gear" opacity="0.65">
+            <!-- 12-tooth precision spur gear perimeter -->
+            <path d="M 181.7 124.6 L 197.9 125.8 L 197.9 134.2 L 181.7 135.4 L 177.5 151.2 L 190.9 160.3 L 186.7 167.5 L 172.1 160.6 L 160.6 172.1 L 167.5 186.7 L 160.3 190.9 L 151.2 177.5 L 135.4 181.7 L 134.2 197.9 L 125.8 197.9 L 124.6 181.7 L 108.8 177.5 L 99.7 190.9 L 92.5 186.7 L 99.4 172.1 L 87.9 160.6 L 73.3 167.5 L 69.1 160.3 L 82.5 151.2 L 78.3 135.4 L 62.1 134.2 L 62.1 125.8 L 78.3 124.6 L 82.5 108.8 L 69.1 99.7 L 73.3 92.5 L 87.9 99.4 L 99.4 87.9 L 92.5 73.3 L 99.7 69.1 L 108.8 82.5 L 124.6 78.3 L 125.8 62.1 L 134.2 62.1 L 135.4 78.3 L 151.2 82.5 L 160.3 69.1 L 167.5 73.3 L 160.6 87.9 L 172.1 99.4 L 186.7 92.5 L 190.9 99.7 L 177.5 108.8 Z" fill="currentColor"/>
+            <!-- Gear rim inner cut -->
+            <circle cx="130" cy="130" r="44" fill="#ffffff"/>
+            <circle cx="130" cy="130" r="44" stroke="currentColor" stroke-width="4"/>
+            <!-- 4 Spoke / Lightening Holes -->
+            <circle cx="130" cy="102" r="7" fill="currentColor" opacity="0.65"/>
+            <circle cx="130" cy="158" r="7" fill="currentColor" opacity="0.65"/>
+            <circle cx="102" cy="130" r="7" fill="currentColor" opacity="0.65"/>
+            <circle cx="158" cy="130" r="7" fill="currentColor" opacity="0.65"/>
+            <!-- Central Hub & Shaft Keyway -->
+            <circle cx="130" cy="130" r="18" fill="currentColor"/>
+            <circle cx="130" cy="130" r="10" fill="#ffffff"/>
+            <rect x="127" y="117" width="6" height="6" fill="#ffffff"/>
+          </g>
+
+          <!-- 2. Machinist Hammer (Vertical Center) -->
+          <g class="tool-hammer">
+            <!-- Hammer Handle with grip contour and end cap -->
+            <path d="M 125 70 L 135 70 L 136 175 C 136 175 138 205 137 232 C 137 236 134 238 130 238 C 126 238 123 236 123 232 C 122 205 124 175 124 175 Z" fill="currentColor" stroke="#ffffff" stroke-width="2.5"/>
+            <!-- Grip bands on handle -->
+            <line x1="123" y1="195" x2="137" y2="195" stroke="#ffffff" stroke-width="2"/>
+            <line x1="123" y1="205" x2="137" y2="205" stroke="#ffffff" stroke-width="2"/>
+            <line x1="123" y1="215" x2="137" y2="215" stroke="#ffffff" stroke-width="2"/>
+
+            <!-- Hammer Head: Left Striking Face, Center Eye, Right Ball-peen -->
+            <!-- Center eye block -->
+            <path d="M 120 46 L 140 46 L 142 66 L 118 66 Z" fill="currentColor" stroke="#ffffff" stroke-width="2.5"/>
+            <!-- Wedge on top -->
+            <rect x="128" y="42" width="4" height="6" rx="1" fill="currentColor" stroke="#ffffff" stroke-width="1.5"/>
+            <!-- Left flat striking neck & face -->
+            <path d="M 118 50 L 102 51 L 100 45 L 86 45 C 84 45 83 47 83 50 L 83 62 C 83 65 84 67 86 67 L 100 67 L 102 61 L 118 62 Z" fill="currentColor" stroke="#ffffff" stroke-width="2.5"/>
+            <!-- Right ball-peen neck & round head -->
+            <path d="M 142 51 L 156 52 C 158 48 163 46 168 49 C 174 53 174 60 168 64 C 163 67 158 64 156 60 L 142 61 Z" fill="currentColor" stroke="#ffffff" stroke-width="2.5"/>
+          </g>
+
+          <!-- 3. Combination Spanner Wrench (Diagonal 38deg: Left-Bottom to Right-Top) -->
+          <g class="tool-spanner" transform="rotate(38 130 130)">
+            <!-- Open End (Left) -->
+            <path d="M 46 112 C 34 112 24 120 24 130 C 24 140 34 148 46 148 C 53 148 60 144 64 138 L 74 138 L 74 122 L 64 122 C 60 116 53 112 46 112 Z" fill="currentColor" stroke="#ffffff" stroke-width="2.5"/>
+            <!-- 15-degree U-jaw opening for hex nut -->
+            <polygon points="20,123 38,126 44,130 38,134 20,137" fill="#ffffff"/>
+
+            <!-- Shank with recessed center beam -->
+            <rect x="72" y="123" width="112" height="14" rx="2" fill="currentColor" stroke="#ffffff" stroke-width="2.5"/>
+            <rect x="84" y="126" width="88" height="8" rx="2" fill="#ffffff" fill-opacity="0.35"/>
+
+            <!-- Box End (Right) - 12-point ring -->
+            <circle cx="204" cy="130" r="21" fill="currentColor" stroke="#ffffff" stroke-width="2.5"/>
+            <!-- 12-point star hole (double hex) -->
+            <polygon points="204,116 207,121 213,119 212,125 218,126 215,131 218,136 212,137 213,143 207,141 204,146 201,141 195,143 196,137 190,136 193,131 190,126 196,125 195,119 201,121" fill="#ffffff"/>
+          </g>
+
+          <!-- 4. Adjustable Wrench (Diagonal -38deg: Left-Top to Right-Bottom) -->
+          <g class="tool-adjustable" transform="rotate(-38 130 130)">
+            <!-- Handle shank with ergonomic taper and hanging hole -->
+            <path d="M 68 123 L 206 123 C 214 123 222 126 222 130 C 222 134 214 137 206 137 L 68 137 Z" fill="currentColor" stroke="#ffffff" stroke-width="2.5"/>
+            <circle cx="212" cy="130" r="4.5" fill="#ffffff"/>
+
+            <!-- Adjustable Wrench Head -->
+            <!-- Fixed upper jaw & frame -->
+            <path d="M 68 116 L 46 116 C 40 108 34 105 24 105 C 19 105 16 109 18 114 L 28 126 L 44 126 L 44 135 L 68 135 Z" fill="currentColor" stroke="#ffffff" stroke-width="2.5"/>
+            
+            <!-- Movable lower jaw -->
+            <path d="M 28 132 L 40 132 L 40 144 L 26 144 C 23 144 21 141 23 138 Z" fill="currentColor" stroke="#ffffff" stroke-width="2.5"/>
+
+            <!-- Thumb-screw worm gear window with knurl ribs -->
+            <rect x="46" y="122" width="16" height="18" rx="2" fill="currentColor" stroke="#ffffff" stroke-width="2"/>
+            <line x1="50" y1="124" x2="50" y2="138" stroke="#ffffff" stroke-width="1.5"/>
+            <line x1="54" y1="124" x2="54" y2="138" stroke="#ffffff" stroke-width="1.5"/>
+            <line x1="58" y1="124" x2="58" y2="138" stroke="#ffffff" stroke-width="1.5"/>
+          </g>
+        </svg>
+      </div>
+
+      <!-- User Profile Pill (Sidebar Bottom - Sesuai Permintaan) -->
+      <div class="sidebar-bottom" style="margin-top: auto; padding: 12px 14px; background: #ffffff; border-top: 1px solid #e8eef7; position: relative; z-index: 20; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
+        <div class="sidebar-user-wrap" style="position: relative; width: 100%;">
+          <button type="button" class="sidebar-user-btn" id="sidebar-user-btn" onclick="toggleUserDropdown(event)" title="Profil Pengguna" style="width: 100%; background: #ffffff; border: 1.5px solid #dce6f8; border-radius: 999px; height: 44px; padding: 0 14px 0 6px; display: flex; align-items: center; gap: 10px; cursor: pointer; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04); outline: none; box-sizing: border-box; font-family: inherit;">
+            <span class="sidebar-avatar" id="sidebar-avatar-initial" style="width: 32px; height: 32px; min-width: 32px; border-radius: 50%; background: #2563eb; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; font-weight: 800; line-height: 1; flex-shrink: 0; box-shadow: 0 2px 5px rgba(37, 99, 235, 0.3);">A</span>
+            <span class="sidebar-username" id="sidebar-username" style="font-size: 0.92rem; font-weight: 800; color: #1d4ed8; letter-spacing: -0.01em; flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2;">Administrator</span>
+            <svg class="sidebar-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="2.5" style="width: 16px; height: 16px; min-width: 16px; color: #1d4ed8; flex-shrink: 0; transition: transform 0.2s;">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+
+          <!-- Dropdown Menu (Opens Upwards Above Bottom Bar) -->
+          <div class="sidebar-user-dropdown" id="sidebar-user-dropdown" style="display: none; position: absolute; bottom: calc(100% + 8px); left: 0; right: 0; background: #ffffff; border: 1px solid #dbeafe; border-radius: 14px; box-shadow: 0 -10px 25px rgba(15, 23, 42, 0.12); padding: 8px 0; z-index: 100;">
+            <div class="dropdown-user-header">
+              <strong id="dropdown-user-name">Administrator</strong>
+              <small id="dropdown-user-role">PIC Maintenance</small>
+            </div>
+            <div class="dropdown-divider"></div>
+            <button type="button" class="dropdown-item" onclick="handleLogout()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+              Keluar / Logout
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN BODY CANVAS -->
+    <main class="main-body">
+
+      <!-- TOP BAR (Matches Reference Design) -->
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <button class="topbar-toggle-btn" id="sidebar-toggle-btn" onclick="toggleSidebarCollapse()" title="Toggle Sidebar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <span class="topbar-title" id="topbar-page-title">DASHBOARD</span>
+        </div>
+
+        <div class="topbar-right">
+          <!-- Synchronization Gear Button (Replaces Refresh) -->
+          <button class="topbar-btn-icon" id="topbar-sync-btn" onclick="handleTopbarRefresh()" title="Sinkronisasi Data Real-Time">
+            <svg class="sync-gear" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+
+          <!-- Notification Bell Button with Red Dot Badge -->
+          <button class="topbar-btn-icon" onclick="showNotificationPanel()" title="Notifikasi (2 Baru)">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span class="topbar-badge-dot"></span>
+          </button>
+        </div>
+      </header>
+
+      <!-- SCROLLABLE MAIN CONTENT WRAPPER -->
+      <div class="main-content-scroll">
+      <div id="view-dashboard" class="content-view active-view">
+        <div class="dash-page">
+          <!-- KPI Summary Strip (4 Cards Compact) -->
+          <div class="dash-kpi-grid">
+            <div class="dash-kpi-card">
+              <div class="dash-kpi-icon blue">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+              </div>
+              <div class="dash-kpi-body">
+                <span class="dash-kpi-label">Rata-rata Suhu</span>
+                <div class="dash-kpi-val"><strong id="kpi-avg-temp">--.-</strong> <span>°C</span></div>
+                <small class="dash-kpi-sub" id="kpi-avg-sub">5 Titik Suhu</small>
+              </div>
+            </div>
+
+            <div class="dash-kpi-card">
+              <div class="dash-kpi-icon red">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+              </div>
+              <div class="dash-kpi-body">
+                <span class="dash-kpi-label">Suhu Puncak (Peak)</span>
+                <div class="dash-kpi-val"><strong id="kpi-peak-temp">--.-</strong> <span>°C</span></div>
+                <small class="dash-kpi-sub" id="kpi-peak-device">-</small>
+              </div>
+            </div>
+
+            <div class="dash-kpi-card">
+              <div class="dash-kpi-icon green">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              </div>
+              <div class="dash-kpi-body">
+                <span class="dash-kpi-label">Getaran (RMS)</span>
+                <div class="dash-kpi-val"><strong id="kpi-vib-val">-.---</strong> <span>in/s</span></div>
+                <small class="dash-kpi-sub" id="kpi-vib-sub">&lt; 0.10 in/s</small>
+              </div>
+            </div>
+
+            <div class="dash-kpi-card">
+              <div class="dash-kpi-icon purple">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+              </div>
+              <div class="dash-kpi-body">
+                <span class="dash-kpi-label">Status Mesin</span>
+                <div class="dash-kpi-val"><span class="dash-pill-status ok" id="kpi-machine-status"><span class="dot"></span>NORMAL</span></div>
+                <small class="dash-kpi-sub" id="kpi-last-update">--:--:--</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3 PILLARS OF MAINTENANCE STRIP -->
+          <div class="maintenance-pillars-strip" id="dash-maintenance-pillars">
+            <!-- 1. CORRECTIVE MAINTENANCE (CM) -->
+            <div class="pillar-card cm" onclick="switchMainView('cm')">
+              <div class="pillar-head">
+                <div class="pillar-badge-group">
+                  <span class="pillar-type red">CM</span>
+                  <span class="pillar-trigger red">PRODUKSI</span>
+                </div>
+                <span class="pillar-badge-count red" id="dash-cm-count">2 Tiket Aktif</span>
+              </div>
+              <div class="pillar-title">Corrective Maintenance</div>
+              <table class="pillar-table">
+                <tbody>
+                  <tr>
+                    <td class="pt-label">Open Breakdown</td>
+                    <td class="pt-val"><span class="stat-val red" id="dash-cm-open">2 Kasus</span></td>
+                  </tr>
+                  <tr>
+                    <td class="pt-label">Target MTTR</td>
+                    <td class="pt-val"><span class="stat-val">&lt; 30 mnt</span></td>
+                  </tr>
+                  <tr>
+                    <td class="pt-label">Response Time</td>
+                    <td class="pt-val"><span class="stat-val green">&lt; 5 mnt</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- 2. PREVENTIVE MAINTENANCE (PM) -->
+            <div class="pillar-card pm" onclick="switchMainView('pm')">
+              <div class="pillar-head">
+                <div class="pillar-badge-group">
+                  <span class="pillar-type amber">PM</span>
+                  <span class="pillar-trigger amber">MAINTENANCE</span>
+                </div>
+                <span class="pillar-badge-count amber" id="dash-pm-count">1 Overdue, 2 Mendatang</span>
+              </div>
+              <div class="pillar-title">Preventive Maintenance</div>
+              <table class="pillar-table">
+                <tbody>
+                  <tr>
+                    <td class="pt-label">Kepatuhan Jadwal</td>
+                    <td class="pt-val"><span class="stat-val green" id="dash-pm-compliance">25.0%</span></td>
+                  </tr>
+                  <tr>
+                    <td class="pt-label">Stroke Warning</td>
+                    <td class="pt-val"><span class="stat-val amber" id="dash-pm-stroke-warn">1 Jig</span></td>
+                  </tr>
+                  <tr>
+                    <td class="pt-label">Jadwal Bulan Ini</td>
+                    <td class="pt-val"><span class="stat-val" id="dash-pm-total">4 Task</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- 3. PREDICTIVE MAINTENANCE (PdM) -->
+            <div class="pillar-card pdm" onclick="switchMainView('pdm')">
+              <div class="pillar-head">
+                <div class="pillar-badge-group">
+                  <span class="pillar-type blue">PdM</span>
+                  <span class="pillar-trigger blue">MPC</span>
+                </div>
+                <span class="pillar-badge-count blue" id="dash-pdm-health">Health: 99.2%</span>
+              </div>
+              <div class="pillar-title">Predictive Maintenance</div>
+              <table class="pillar-table">
+                <tbody>
+                  <tr>
+                    <td class="pt-label">MPC Status</td>
+                    <td class="pt-val"><span class="stat-val green" id="dash-pdm-status">OPTIMAL</span></td>
+                  </tr>
+                  <tr>
+                    <td class="pt-label">Indeks Anomali</td>
+                    <td class="pt-val"><span class="stat-val green" id="dash-pdm-anomaly">0 Terdeteksi</span></td>
+                  </tr>
+                  <tr>
+                    <td class="pt-label">Sensor Kritis</td>
+                    <td class="pt-val"><span class="stat-val blue">6 Titik Online</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Charts Grid (2 Utama: Suhu Multi-Titik & Getaran) -->
+          <div class="dash-charts-grid">
+
+            <!-- Chart 1: Tren Suhu Multi-Titik -->
+            <section class="dash-chart-card">
+              <div class="dash-chart-header">
+                <div>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span class="chart-badge blue">Suhu °C</span>
+                    <h3 class="dash-chart-title">Tren Suhu Titik Kritis</h3>
+                  </div>
+                </div>
+                <div class="dash-chart-filters">
+                  <div class="dash-tab-group" id="temp-chart-filter-group">
+                    <button class="dash-tab active" onclick="setTempChartFilter('all', this)">Semua Titik</button>
+                    <button class="dash-tab" onclick="setTempChartFilter('bush', this)">Bushing Eksentrik</button>
+                    <button class="dash-tab" onclick="setTempChartFilter('bearing', this)">Bearing Transmisi</button>
+                    <button class="dash-tab" onclick="setTempChartFilter('link', this)">Link Press</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Canvas Container -->
+              <div class="dash-canvas-wrap" id="temp-canvas-container">
+                <canvas id="canvas-temp-chart" height="260"></canvas>
+                <div id="temp-chart-tooltip" class="dash-chart-tooltip"></div>
+              </div>
+            </section>
+
+            <!-- Chart 2: Tren Getaran Spektrum RMS -->
+            <section class="dash-chart-card">
+              <div class="dash-chart-header">
+                <div>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span class="chart-badge green">Getaran in/s</span>
+                    <h3 class="dash-chart-title">Tren Getaran (RMS)</h3>
+                  </div>
+                </div>
+                <div class="dash-vib-stat-pills">
+                  <span class="vib-stat-pill">Peak: <strong id="vib-peak-tag">-.--- in/s</strong></span>
+                  <span class="vib-stat-pill">Avg: <strong id="vib-avg-tag">-.--- in/s</strong></span>
+                </div>
+              </div>
+
+              <!-- Canvas Container -->
+              <div class="dash-canvas-wrap" id="vib-canvas-container">
+                <canvas id="canvas-vib-chart" height="260"></canvas>
+                <div id="vib-chart-tooltip" class="dash-chart-tooltip"></div>
+              </div>
+            </section>
+
+          </div>
+
+        </div>
+      </div>
+
+
+      <!-- ======================================================== -->
+      <!-- VIEW 2: MASTER DRAWING                                   -->
+      <!-- ======================================================== -->
+      <div id="view-drawing" class="content-view" style="display: none;">
+        <div class="section-card-panel">
+          <div class="panel-header-row">
+            <div>
+              <h2 class="section-heading">Master Drawing</h2>
+            </div>
+            <div class="panel-actions-row">
+              <input type="text" class="input-table-search" id="search-drawing" placeholder="Cari Part Number / Nama Drawing..." oninput="renderDrawingTable()">
+              <button class="btn-primary-blue" onclick="showNewDrawingModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>Upload Drawing Baru</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="modern-table">
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>Drawing Number</th>
+                  <th>Nama Part / Assembly</th>
+                  <th>Line Produksi</th>
+                  <th>Revisi</th>
+                  <th>Tipe File</th>
+                  <th>Status</th>
+                  <th>Tanggal Rilis</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="drawing-table-body">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ======================================================== -->
+      <!-- VIEW 3: JIG & FIXTURE                                    -->
+      <!-- ======================================================== -->
+      <div id="view-jig" class="content-view" style="display: none;">
+        <div class="section-card-panel">
+          <div class="panel-header-row">
+            <div>
+              <h2 class="section-heading">Jig & Fixture</h2>
+            </div>
+            <div class="panel-actions-row">
+              <input type="text" class="input-table-search" id="search-jig-table" placeholder="Cari Jig ID / Lokasi..." oninput="renderJigTable()">
+              <button class="btn-primary-blue" onclick="showNewJigModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>Registrasi Jig Baru</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="modern-table">
+              <thead>
+                <tr>
+                  <th>Jig Code</th>
+                  <th>Nama Maintenance</th>
+                  <th>Line Mesin</th>
+                  <th>Siklus Terpakai</th>
+                  <th>Batas Maksimal</th>
+                  <th>Persentase</th>
+                  <th>Lokasi Rak</th>
+                  <th>Status Operasional</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="jig-table-body">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ======================================================== -->
+      <!-- VIEW 4: MONITORING VIEW (IoT MQTT + Telemetry Live)     -->
+      <!-- ======================================================== -->
+      <div id="view-monitoring" class="content-view" style="display: none;">
+        <div class="mon-page">
+
+          <!-- Action Bar (Hanya Button Refresh) -->
+          <div class="mon-toolbar-row">
+            <button id="btn-refresh" class="mon-btn-refresh-only" onclick="refreshAll()" title="Refresh Data Monitoring">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              <span>Refresh</span>
+            </button>
+          </div>
+
+          <!-- Area Konten yang Dapat Digulir di Bawah Header Tetap -->
+          <div class="mon-scroll-area">
+
+            <!-- Devices (6 Titik Komponen Jingduan Forging) -->
+            <section class="mon-panel">
+              <div class="mon-panel-head">
+                <div>
+                  <h3>Sensor Komponen Mesin</h3>
+                </div>
+                <span class="mon-count" id="device-count-tag">0 Komponen</span>
+              </div>
+              <div class="mon-device-grid" id="devices-container">
+                <div class="mon-empty"><div class="mini-spinner"></div><p>Memuat data...</p></div>
+              </div>
+            </section>
+
+            <!-- Grid 2 Kolom untuk Live Stream & Riwayat Telemetri -->
+            <div class="mon-tables-grid">
+
+              <!-- Live Stream (Panel Kiri) -->
+              <section class="mon-panel table-panel">
+                <div class="mon-panel-head">
+                  <div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span class="pulse-indicator"></span>
+                      <h3>Live Stream Telemetri</h3>
+                    </div>
+                  </div>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <button class="mon-btn-ghost-sm" onclick="showMqttPayloadGuideModal()" title="Panduan Format Data JSON MQTT">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                      Format JSON
+                    </button>
+                    <span class="mon-pill-badge green" id="badge-mqtt-stream">Live</span>
+                  </div>
+                </div>
+                <div class="mon-table-wrap mon-table-scroll">
+                  <table class="mon-table modern-stream-table">
+                    <thead>
+                      <tr>
+                        <th style="width:130px;">Waktu</th>
+                        <th>Sensor / Komponen</th>
+                        <th style="width:140px;">Nilai Terukur</th>
+                        <th style="width:110px;">Status</th>
+                        <th style="text-align:center; width:56px;">Raw</th>
+                      </tr>
+                    </thead>
+                    <tbody id="terminal-stream">
+                      <tr><td colspan="5" class="mon-table-empty">Menunggu data telemetri...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              <!-- History (Panel Bawah) -->
+              <section class="mon-panel table-panel">
+                <div class="mon-panel-head">
+                  <div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span class="database-indicator"></span>
+                      <h3>Riwayat Telemetri</h3>
+                    </div>
+                  </div>
+                  <div>
+                    <select id="filter-device" class="mon-select modern-filter-select">
+                      <option value="">Semua Sensor</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="mon-table-wrap mon-table-scroll">
+                  <table class="mon-table modern-stream-table">
+                    <thead>
+                      <tr>
+                        <th style="width:75px;">No</th>
+                        <th>Sensor / Komponen</th>
+                        <th style="width:140px;">Nilai Terukur</th>
+                        <th style="width:110px;">Status</th>
+                        <th style="width:160px;">Waktu Rekam</th>
+                        <th style="text-align:center; width:56px;">Raw</th>
+                      </tr>
+                    </thead>
+                    <tbody id="telemetry-table-body">
+                      <tr><td colspan="6" class="mon-table-empty">Belum ada data.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+
+      <!-- ======================================================== -->
+      <!-- VIEW 5: TPM CONTROL                                      -->
+      <!-- ======================================================== -->
+      <div id="view-tpm" class="content-view" style="display: none;">
+        <div class="section-card-panel">
+          <div class="panel-header-row">
+            <div>
+              <h2 class="section-heading">TPM Control</h2>
+            </div>
+            <div class="panel-actions-row">
+              <button class="btn-primary-blue" onclick="showNewTpmScheduleModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>Tambah Jadwal TPM</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="tpm-stats-strip">
+            <div class="tpm-pill green">Total Jadwal: <strong>12</strong></div>
+            <div class="tpm-pill blue">Selesai Bulan Ini: <strong>8</strong></div>
+            <div class="tpm-pill amber">Mendatang (≤7 Hari): <strong>3</strong></div>
+            <div class="tpm-pill red">Overdue: <strong>1</strong></div>
+          </div>
+
+          <div class="table-container">
+            <table class="modern-table">
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>Kode Part / Jig</th>
+                  <th>Uraian Perawatan TPM</th>
+                  <th>Periode Siklus</th>
+                  <th>Target Pelaksanaan</th>
+                  <th>PIC Bertanggung Jawab</th>
+                  <th>Status</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="tpm-schedule-table-body">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ======================================================== -->
+      <!-- VIEW 6: APPROVAL CENTER                                  -->
+      <!-- ======================================================== -->
+      <div id="view-approval" class="content-view" style="display: none;">
+        <div class="section-card-panel">
+          <div class="panel-header-row">
+            <div>
+              <h2 class="section-heading">Approval Center</h2>
+            </div>
+            <div class="approval-tab-pills">
+              <button class="pill-tab active" onclick="filterApprovalView('all', this)">Semua (4)</button>
+              <button class="pill-tab" onclick="filterApprovalView('pending', this)">Menunggu (3)</button>
+              <button class="pill-tab" onclick="filterApprovalView('approved', this)">Disetujui (1)</button>
+            </div>
+          </div>
+
+          <div class="approval-card-list" id="approval-queue-container">
+            <!-- Dynamically populated via app.js -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- VIEW: CORRECTIVE MAINTENANCE (CM)                        -->
+      <!-- ======================================================== -->
+      <div id="view-cm" class="content-view" style="display: none;">
+        <div class="section-card-panel">
+          <div class="panel-header-row">
+            <div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <h2 class="section-heading" style="margin:0;">Corrective Maintenance</h2>
+                <span class="pillar-type red">PRODUKSI</span>
+              </div>
+            </div>
+            <div class="panel-actions-row">
+              <input type="text" class="input-table-search" id="search-cm" placeholder="Cari No Tiket / Mesin / Gejala..." oninput="renderCmTable()">
+              <button class="btn-primary-blue" style="background:#dc2626;" onclick="showNewCmModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>+ Lapor Breakdown</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Status & KPI Summary Strip -->
+          <div class="tpm-stats-strip" style="margin-bottom: 16px;">
+            <div class="tpm-pill red" id="cm-stat-waiting">Menunggu Respon: <strong>1</strong></div>
+            <div class="tpm-pill amber" id="cm-stat-progress">Dalam Perbaikan: <strong>1</strong></div>
+            <div class="tpm-pill green" id="cm-stat-completed">Selesai Hari Ini: <strong>4</strong></div>
+            <div class="tpm-pill blue" id="cm-stat-mttr">Rata-rata MTTR: <strong>26 mnt</strong></div>
+          </div>
+
+          <!-- Filter Pills -->
+          <div class="approval-tab-pills" style="margin-bottom: 16px;">
+            <button class="pill-tab active" id="filter-cm-all" onclick="filterCmView('all', this)">Semua Tiket</button>
+            <button class="pill-tab" id="filter-cm-waiting" onclick="filterCmView('waiting', this)">Menunggu Respon</button>
+            <button class="pill-tab" id="filter-cm-in_progress" onclick="filterCmView('in_progress', this)">Sedang Dikerjakan</button>
+            <button class="pill-tab" id="filter-cm-completed" onclick="filterCmView('completed', this)">Telah Selesai</button>
+          </div>
+
+          <!-- Modern Table -->
+          <div class="table-container">
+            <table class="modern-table">
+              <thead>
+                <tr>
+                  <th style="width:120px;">No Tiket</th>
+                  <th style="width:140px;">Waktu Lapor</th>
+                  <th>Mesin / Line</th>
+                  <th>Pelapor</th>
+                  <th>Komponen</th>
+                  <th>Gejala & Masalah</th>
+                  <th style="width:110px;">Severity</th>
+                  <th>PIC</th>
+                  <th style="width:130px;">Status</th>
+                  <th style="width:130px; text-align:center;">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="cm-table-body">
+                <!-- Dynamically populated via app.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- VIEW: PREVENTIVE MAINTENANCE (PM)                        -->
+      <!-- ======================================================== -->
+      <div id="view-pm" class="content-view" style="display: none;">
+        <div class="section-card-panel">
+          <div class="panel-header-row">
+            <div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <h2 class="section-heading" style="margin:0;">Preventive Maintenance</h2>
+                <span class="pillar-type amber">MAINTENANCE</span>
+              </div>
+            </div>
+            <div class="panel-actions-row">
+              <input type="text" class="input-table-search" id="search-pm" placeholder="Cari Kode PM / Mesin..." oninput="renderPmTable()">
+              <button class="btn-primary-blue" style="background:#d97706;" onclick="showNewPmModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>+ Tambah Jadwal</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Status & KPI Summary Strip -->
+          <div class="tpm-stats-strip" style="margin-bottom: 16px;">
+            <div class="tpm-pill green">Total Agenda: <strong>14</strong></div>
+            <div class="tpm-pill blue">Selesai: <strong>9</strong></div>
+            <div class="tpm-pill amber">Stroke Warning: <strong>2</strong></div>
+            <div class="tpm-pill red">Overdue: <strong>1</strong></div>
+          </div>
+
+          <!-- Filter Pills -->
+          <div class="approval-tab-pills" style="margin-bottom: 16px;">
+            <button class="pill-tab active" onclick="filterPmView('all', this)">Semua</button>
+            <button class="pill-tab" onclick="filterPmView('stroke', this)">Stroke Jig</button>
+            <button class="pill-tab" onclick="filterPmView('calendar', this)">Kalender</button>
+            <button class="pill-tab" onclick="filterPmView('pending', this)">Menunggu</button>
+            <button class="pill-tab" onclick="filterPmView('completed', this)">Selesai</button>
+          </div>
+
+          <!-- Table Container -->
+          <div class="table-container">
+            <table class="modern-table">
+              <thead>
+                <tr>
+                  <th style="width:110px;">ID Agenda</th>
+                  <th style="width:120px;">Tipe Trigger</th>
+                  <th>Mesin / Jig</th>
+                  <th>Uraian Perawatan</th>
+                  <th>Siklus / Counter</th>
+                  <th style="width:110px;">Target</th>
+                  <th>PIC</th>
+                  <th style="width:110px;">Status</th>
+                  <th style="width:130px; text-align:center;">Checklist</th>
+                </tr>
+              </thead>
+              <tbody id="pm-table-body">
+                <!-- Dynamically populated via app.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- VIEW: PREDICTIVE MAINTENANCE (PdM & MPC)                 -->
+      <!-- ======================================================== -->
+      <div id="view-pdm" class="content-view" style="display: none;">
+        <div class="section-card-panel">
+          <div class="panel-header-row">
+            <div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <h2 class="section-heading" style="margin:0;">Predictive Maintenance</h2>
+                <span class="pillar-type blue">MPC</span>
+              </div>
+            </div>
+            <div class="panel-actions-row">
+              <button class="btn-primary-blue" onclick="refreshMpcHealth()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                <span>Diagnosa MPC</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Hero MPC Health Status Card -->
+          <div class="mpc-hero-card">
+            <div class="mpc-score-circle">
+              <span class="mpc-score-num" id="mpc-live-health-score">98.4</span>
+              <span class="mpc-score-lbl">HEALTH INDEX</span>
+            </div>
+            <div class="mpc-hero-info">
+              <h3 id="mpc-live-health-title">Kondisi Mesin: OPTIMAL</h3>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:4px; min-width:180px;">
+              <span style="font-size:0.75rem; opacity:0.85;">Estimasi MTBF:</span>
+              <strong style="font-size:1.1rem; color:#93c5fd;">&gt; 720 Jam Kerja</strong>
+            </div>
+          </div>
+
+          <!-- Critical Component Health Grid -->
+          <h3 style="font-size:0.95rem; font-weight:800; color:#0f172a; margin-bottom:12px;">Kondisi Komponen (MPC Matrix)</h3>
+          <div class="mpc-grid" id="mpc-component-grid">
+            <!-- Rendered dynamically via app.js -->
+          </div>
+
+          <!-- Predictive Advisory Log -->
+          <div style="margin-top: 10px;">
+            <h3 style="font-size:0.95rem; font-weight:800; color:#0f172a; margin-bottom:12px;">Rekomendasi Preskriptif</h3>
+            <div class="table-container">
+              <table class="modern-table">
+                <thead>
+                  <tr>
+                    <th>Komponen / Titik</th>
+                    <th>Sensor</th>
+                    <th>Nilai Terkini</th>
+                    <th>Batas Peringatan</th>
+                    <th>Status</th>
+                    <th>Prediksi RUL</th>
+                    <th>Rekomendasi Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="mpc-advisory-table-body">
+                  <!-- Dynamically populated via app.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      </div> <!-- /.main-content-scroll -->
+    </main>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: DETAIL KANBAN CARD / ITEM                         -->
+  <!-- ======================================================== -->
+  <div id="modal-detail" class="modal-backdrop" style="display: none;" onclick="closeModalOnBackdrop(event, 'modal-detail')">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="modal-title" class="modal-title">Detail Item</h3>
+        <button class="modal-btn-close" onclick="closeModal('modal-detail')">&times;</button>
+      </div>
+      <div class="modal-body" id="modal-body-content">
+        <!-- Injected via app.js -->
+      </div>
+      <div class="modal-footer" id="modal-footer-actions">
+        <button class="btn-secondary" onclick="closeModal('modal-detail')">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: BUAT TIKET BREAKDOWN BARU (TRIGGER DARI PRODUKSI) -->
+  <!-- ======================================================== -->
+  <div id="modal-new-cm" class="modal-backdrop" style="display: none;" onclick="closeModalOnBackdrop(event, 'modal-new-cm')">
+    <div class="modal-dialog">
+      <div class="modal-header" style="border-bottom: 2px solid #fee2e2;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="pillar-type red">PRODUKSI &rarr; CM</span>
+          <h3 class="modal-title" style="margin:0;">Lapor Breakdown</h3>
+        </div>
+        <button class="modal-btn-close" onclick="closeModal('modal-new-cm')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-new-cm" onsubmit="handleCreateCmTicket(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Mesin / Jalur Produksi *</label>
+              <select id="cm-input-machine" class="form-control" required>
+                <option value="Jingduan Forging Press 630T - Line 2">Jingduan Forging Press 630T - Line 2</option>
+                <option value="Jingduan Forging Press 400T - Line 1">Jingduan Forging Press 400T - Line 1</option>
+                <option value="CNC Machining Center Doosan - Line 3">CNC Machining Center Doosan - Line 3</option>
+                <option value="Induction Heating Furnace - Line 2">Induction Heating Furnace - Line 2</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Nama Pelapor *</label>
+              <input type="text" id="cm-input-reporter" class="form-control" placeholder="Nama operator / line leader" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Komponen Kerusakan *</label>
+              <select id="cm-input-component" class="form-control" required>
+                <option value="Bushing Eksentrik / Main Shaft">Bushing Eksentrik / Main Shaft</option>
+                <option value="Bearing Transmisi Flywheel">Bearing Transmisi Flywheel</option>
+                <option value="Link Press / Mechanism">Link Press / Mechanism</option>
+                <option value="Sistem Pelumasan Otomatis">Sistem Pelumasan Otomatis</option>
+                <option value="Sistem Hidrolik / Pneumatik">Sistem Hidrolik / Pneumatik</option>
+                <option value="Kelistrikan & Sensor PLC">Kelistrikan & Sensor PLC</option>
+                <option value="Jig / Dies Stopper">Jig / Dies Stopper</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Tingkat Dampak (Severity) *</label>
+              <select id="cm-input-severity" class="form-control" required>
+                <option value="Critical Line Stop">Critical (LINE STOP)</option>
+                <option value="Warning Degradasi">Warning</option>
+                <option value="Minor">Minor</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Deskripsi Masalah *</label>
+            <textarea id="cm-input-desc" class="form-control" rows="3" placeholder="Jelaskan bunyi, suhu, getaran, atau kode alarm..." required></textarea>
+          </div>
+
+          <div class="modal-footer" style="padding: 12px 0 0 0; margin-top: 10px;">
+            <button type="button" class="btn-secondary" onclick="closeModal('modal-new-cm')">Batal</button>
+            <button type="submit" class="btn-primary-blue" style="background:#dc2626;">Kirim Laporan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: SELESAIKAN PERBAIKAN CM                           -->
+  <!-- ======================================================== -->
+  <div id="modal-resolve-cm" class="modal-backdrop" style="display: none;" onclick="closeModalOnBackdrop(event, 'modal-resolve-cm')">
+    <div class="modal-dialog">
+      <div class="modal-header" style="border-bottom: 2px solid #dcfce7;">
+        <h3 class="modal-title" id="resolve-cm-modal-title">Selesaikan Perbaikan</h3>
+        <button class="modal-btn-close" onclick="closeModal('modal-resolve-cm')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-resolve-cm" onsubmit="handleResolveCmTicket(event)">
+          <input type="hidden" id="resolve-cm-ticket-id">
+          <div class="form-group">
+            <label>Akar Penyebab (Root Cause) *</label>
+            <textarea id="resolve-cm-root-cause" class="form-control" rows="2" placeholder="Penyebab utama timbulnya gangguan..." required></textarea>
+          </div>
+          <div class="form-group">
+            <label>Tindakan Perbaikan (Corrective Action) *</label>
+            <textarea id="resolve-cm-action" class="form-control" rows="2" placeholder="Langkah perbaikan yang dilakukan..." required></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Spare Part Diganti</label>
+              <input type="text" id="resolve-cm-sparepart" class="form-control" placeholder="Kosongkan jika tidak ada">
+            </div>
+            <div class="form-group">
+              <label>Teknisi PIC *</label>
+              <input type="text" id="resolve-cm-pic" class="form-control" placeholder="Nama teknisi" required>
+            </div>
+          </div>
+          <div class="modal-footer" style="padding: 12px 0 0 0; margin-top: 10px;">
+            <button type="button" class="btn-secondary" onclick="closeModal('modal-resolve-cm')">Batal</button>
+            <button type="submit" class="btn-primary-blue" style="background:#059669;">Selesai & Tutup Tiket</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: DIGITAL CHECKLIST PM                              -->
+  <!-- ======================================================== -->
+  <div id="modal-pm-checklist" class="modal-backdrop" style="display: none;" onclick="closeModalOnBackdrop(event, 'modal-pm-checklist')">
+    <div class="modal-dialog" style="max-width: 600px;">
+      <div class="modal-header" style="border-bottom: 2px solid #fef3c7;">
+        <div>
+          <span class="pillar-type amber">DIGITAL CHECKLIST</span>
+          <h3 class="modal-title" id="pm-checklist-title" style="margin-top:2px;">Checklist Perawatan</h3>
+        </div>
+        <button class="modal-btn-close" onclick="closeModal('modal-pm-checklist')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="pm-active-task-id">
+        <p id="pm-checklist-sub" style="font-size:0.8rem; color:#64748b; margin-bottom:12px;"></p>
+        <div class="checklist-container" id="pm-checklist-items-container">
+          <!-- Checkboxes injected dynamically -->
+        </div>
+        <div style="margin-top: 14px;">
+          <label style="font-size:0.78rem; font-weight:700; color:#334155;">Catatan Teknisi:</label>
+          <textarea id="pm-checklist-notes" class="form-control" rows="2" placeholder="Catatan hasil inspeksi / nilai pengukuran..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeModal('modal-pm-checklist')">Tutup</button>
+        <button type="button" class="btn-primary-blue" style="background:#d97706;" onclick="submitPmChecklist()">Konfirmasi Selesai</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: TAMBAH AGENDA PM BARU -->
+  <div id="modal-new-pm" class="modal-backdrop" style="display: none;" onclick="closeModalOnBackdrop(event, 'modal-new-pm')">
+    <div class="modal-dialog">
+      <div class="modal-header" style="border-bottom: 2px solid #fef3c7;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="pillar-type amber">PM PLANNER</span>
+          <h3 class="modal-title" style="margin:0;">Tambah Agenda PM</h3>
+        </div>
+        <button class="modal-btn-close" onclick="closeModal('modal-new-pm')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-new-pm" onsubmit="handleCreatePmTask(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Mesin / Jig *</label>
+              <select id="pm-input-machine" class="form-control" required>
+                <option value="Jingduan Forging Press 630T - Line 2">Jingduan Forging Press 630T - Line 2</option>
+                <option value="Jig Machining Knuckle Arm (MTM-JIG-088)">Jig Machining Knuckle Arm (MTM-JIG-088)</option>
+                <option value="Jig Machining Hub Wheel (MTM-JIG-094)">Jig Machining Hub Wheel (MTM-JIG-094)</option>
+                <option value="Dies Upper Forging 630T">Dies Upper Forging 630T</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Tipe Trigger *</label>
+              <select id="pm-input-trigger" class="form-control" required>
+                <option value="calendar">Trigger Waktu (Kalender)</option>
+                <option value="stroke">Trigger Stroke Counter</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Uraian Perawatan *</label>
+            <input type="text" id="pm-input-desc" class="form-control" placeholder="Contoh: Penggantian Oli Hidrolik & Filter" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Target Pelaksanaan *</label>
+              <input type="date" id="pm-input-date" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label>PIC Maintenance *</label>
+              <input type="text" id="pm-input-pic" class="form-control" placeholder="Nama teknisi / tim" required>
+            </div>
+          </div>
+          <div class="modal-footer" style="padding: 12px 0 0 0; margin-top: 10px;">
+            <button type="button" class="btn-secondary" onclick="closeModal('modal-new-pm')">Batal</button>
+            <button type="submit" class="btn-primary-blue" style="background:#d97706;">Jadwalkan PM</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=2.0.38"></script>
+</body>
+</html>
