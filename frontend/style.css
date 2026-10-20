@@ -2626,6 +2626,152 @@ body {
   color: #475569;
 }
 
+/* Real-Time Sparkline pada Kartu Komponen */
+.mon-device-sparkline-wrap {
+  width: 100%;
+  height: 48px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  margin: 3px 0 2px 0;
+}
+.mon-device-sparkline-wrap canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Area Grafik Garis Multi-Series Real-time Komprehensif */
+.mon-telemetry-chart-card {
+  margin-top: 14px;
+  background: #ffffff;
+  border: 1.5px solid #dbeafe;
+  border-radius: 10px;
+  padding: 14px 16px;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.04);
+}
+.mon-chart-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.mon-chart-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #1e3a8a;
+}
+.mon-live-tag {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #059669;
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+}
+.mon-chart-canvas-container {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.mon-chart-canvas-container canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.mon-chart-filter-pills {
+  display: flex;
+  gap: 4px;
+  background: #f1f5f9;
+  padding: 3px;
+  border-radius: 7px;
+}
+.mon-pill-btn {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.mon-pill-btn:hover {
+  color: #1e3a8a;
+}
+.mon-pill-btn.active {
+  background: #ffffff;
+  color: #2563eb;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.mon-chart-legend {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+@media (max-width: 1300px) {
+  .mon-chart-legend {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 768px) {
+  .mon-chart-legend {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.mon-leg-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 6px 9px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+.mon-leg-item:hover {
+  background: #ffffff;
+  border-color: #93c5fd;
+}
+.mon-leg-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.mon-leg-name {
+  color: #334155;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+.mon-leg-val {
+  color: #1d4ed8;
+  font-family: var(--font-mono);
+  font-weight: 800;
+  margin-left: auto;
+}
+
 .mon-link {
   background: #eff6ff;
   border: 1.5px solid #93c5fd;

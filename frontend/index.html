@@ -632,16 +632,69 @@
           <!-- Area Konten yang Dapat Digulir di Bawah Header Tetap -->
           <div class="mon-scroll-area">
 
-            <!-- Devices (6 Titik Komponen Jingduan Forging) -->
-            <section class="mon-panel">
+            <!-- Devices (6 Titik Komponen Jingduan Forging & Live Line Charts) -->
+            <section class="mon-panel mon-panel-sensors">
               <div class="mon-panel-head">
-                <div>
-                  <h3>Sensor Komponen Mesin</h3>
+                <h3>Sensor Komponen Mesin</h3>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <div class="mon-chart-filter-pills" id="mon-sensor-chart-filter">
+                    <button type="button" class="mon-pill-btn active" onclick="setMonSensorFilter('all', this)">Semua</button>
+                    <button type="button" class="mon-pill-btn" onclick="setMonSensorFilter('temp', this)">Suhu</button>
+                    <button type="button" class="mon-pill-btn" onclick="setMonSensorFilter('vib', this)">Getaran</button>
+                  </div>
+                  <span class="mon-count" id="device-count-tag">0 Komponen</span>
                 </div>
-                <span class="mon-count" id="device-count-tag">0 Komponen</span>
               </div>
+
+              <!-- 6 Kartu Komponen dengan Grafik Garis Real-time di setiap kartu -->
               <div class="mon-device-grid" id="devices-container">
                 <div class="mon-empty"><div class="mini-spinner"></div><p>Memuat data...</p></div>
+              </div>
+
+              <!-- Area Grafik Garis Multi-Series Real-time Komprehensif -->
+              <div class="mon-telemetry-chart-card">
+                <div class="mon-chart-top-bar">
+                  <span class="mon-chart-heading">Grafik Telemetri</span>
+                </div>
+
+                <div class="mon-chart-canvas-container" id="mon-chart-canvas-container">
+                  <canvas id="canvas-mon-live-chart" height="190"></canvas>
+                  <div id="mon-chart-tooltip" class="dash-chart-tooltip"></div>
+                </div>
+
+                <!-- Legend Interaktif Live -->
+                <div class="mon-chart-legend" id="mon-chart-legend">
+                  <div class="mon-leg-item" data-id="0">
+                    <span class="mon-leg-dot" style="background:#f59e0b;"></span>
+                    <span class="mon-leg-name">Link Temp (#0)</span>
+                    <strong class="mon-leg-val" id="mon-leg-val-0">-- °C</strong>
+                  </div>
+                  <div class="mon-leg-item" data-id="3">
+                    <span class="mon-leg-dot" style="background:#2563eb;"></span>
+                    <span class="mon-leg-name">Right Bush (#3)</span>
+                    <strong class="mon-leg-val" id="mon-leg-val-3">-- °C</strong>
+                  </div>
+                  <div class="mon-leg-item" data-id="4">
+                    <span class="mon-leg-dot" style="background:#06b6d4;"></span>
+                    <span class="mon-leg-name">Left Bush (#4)</span>
+                    <strong class="mon-leg-val" id="mon-leg-val-4">-- °C</strong>
+                  </div>
+                  <div class="mon-leg-item" data-id="5">
+                    <span class="mon-leg-dot" style="background:#10b981;"></span>
+                    <span class="mon-leg-name">Right Bearing (#5)</span>
+                    <strong class="mon-leg-val" id="mon-leg-val-5">-- °C</strong>
+                  </div>
+                  <div class="mon-leg-item" data-id="6">
+                    <span class="mon-leg-dot" style="background:#ec4899;"></span>
+                    <span class="mon-leg-name">Left Bearing (#6)</span>
+                    <strong class="mon-leg-val" id="mon-leg-val-6">-- °C</strong>
+                  </div>
+                  <div class="mon-leg-item" data-id="1">
+                    <span class="mon-leg-dot" style="background:#8b5cf6;"></span>
+                    <span class="mon-leg-name">Vibration (#1)</span>
+                    <strong class="mon-leg-val" id="mon-leg-val-1">-- in/s</strong>
+                  </div>
+                </div>
               </div>
             </section>
 

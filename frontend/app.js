@@ -1382,7 +1382,7 @@ async function fetchDevices() {
     // Filter KHUSUS Mesin Jingduan Forging
     devices = devices.filter(d => isJingduanDevice(d.device_id));
 
-    countTag.textContent = `${devices.length} Komponen`;
+    if (countTag) countTag.textContent = `${devices.length} Komponen`;
 
     if (devices.length === 0) {
       container.innerHTML = `
@@ -1395,11 +1395,11 @@ async function fetchDevices() {
       return;
     }
 
-    container.innerHTML = devices.map(dev => {
-      const isWarn = dev.status === "WARNING";
+    // Ingest latest sensor values & register to dropdown
+    devices.forEach(dev => {
       const isVib = dev.device_id.toLowerCase().includes("vibration");
-      const compName = getJingduanComponentName(dev.device_id);
       const devIdNum = getJingduanDeviceId(dev.device_id, dev.raw_payload);
+      const compName = getJingduanComponentName(dev.device_id);
 
       if (devIdNum && latestSensorValues[devIdNum] !== undefined) {
         if (isVib && dev.pressure != null) {
@@ -1425,38 +1425,86 @@ async function fetchDevices() {
         opt.textContent = `${compName} (#${devIdNum})`;
         filterSelect.appendChild(opt);
       }
+    });
 
-      const ago = dev.last_seen_seconds_ago;
-      const timeText = ago !== undefined
-        ? (ago < 5 ? "Baru saja" : ago < 60 ? `${ago}d lalu` : `${Math.floor(ago / 60)}m lalu`)
-        : formatTime(dev.recorded_at || dev.created_at);
-      const total = dev.total_messages ? `${dev.total_messages} pkt` : "-";
+    const hasCards = container.querySelectorAll(".mon-device").length === devices.length;
 
-      return `
-        <article class="mon-device compact ${isWarn ? "warn" : ""}">
-          <div class="mon-device-top">
-            <div class="mon-device-title-row">
-              <span class="mon-device-chip">#${devIdNum}</span>
-              <div class="mon-device-name" title="${compName}">${compName}</div>
+    if (!hasCards) {
+      container.innerHTML = devices.map(dev => {
+        const isWarn = dev.status === "WARNING";
+        const isVib = dev.device_id.toLowerCase().includes("vibration");
+        const compName = getJingduanComponentName(dev.device_id);
+        const devIdNum = getJingduanDeviceId(dev.device_id, dev.raw_payload);
+        const ago = dev.last_seen_seconds_ago;
+        const timeText = ago !== undefined
+          ? (ago < 5 ? "Baru saja" : ago < 60 ? `${ago}d lalu` : `${Math.floor(ago / 60)}m lalu`)
+          : formatTime(dev.recorded_at || dev.created_at);
+        const total = dev.total_messages ? `${dev.total_messages} pkt` : "-";
+        const valStr = isVib ? (dev.pressure != null ? fmtNum(dev.pressure, 3) : "-") : (dev.temperature != null ? fmtNum(dev.temperature, 1) : "-");
+        const unitStr = isVib ? "in/s" : (dev.temperature != null ? "°C" : "");
+
+        return `
+          <article class="mon-device compact ${isWarn ? "warn" : ""}" id="mon-card-${devIdNum}">
+            <div class="mon-device-top">
+              <div class="mon-device-title-row">
+                <span class="mon-device-chip">#${devIdNum}</span>
+                <div class="mon-device-name" title="${compName}">${compName}</div>
+              </div>
+              <span class="mon-badge ${isWarn ? "mon-badge-off" : "mon-badge-ok"}" id="mon-badge-${devIdNum}">${isWarn ? "WARN" : "OK"}</span>
             </div>
-            <span class="mon-badge ${isWarn ? "mon-badge-off" : "mon-badge-ok"}">${isWarn ? "WARN" : "OK"}</span>
-          </div>
-          <div class="mon-device-val-row">
-            <div class="mon-main-val">
-              <strong>${isVib ? (dev.pressure != null ? fmtNum(dev.pressure, 3) : "-") : (dev.temperature != null ? fmtNum(dev.temperature, 1) : "-")}</strong>
-              <span class="mon-unit">${isVib ? "in/s" : (dev.temperature != null ? "°C" : "")}</span>
+            <div class="mon-device-val-row">
+              <div class="mon-main-val">
+                <strong id="mon-val-${devIdNum}">${valStr}</strong>
+                <span class="mon-unit" id="mon-unit-${devIdNum}">${unitStr}</span>
+              </div>
+              <div class="mon-metric-tag">${isVib ? "Getaran" : "Suhu"}</div>
             </div>
-            <div class="mon-metric-tag">${isVib ? "Getaran" : "Suhu (PV)"}</div>
-          </div>
-          <div class="mon-device-foot">
-            <span>${timeText}</span>
-            <span class="mon-packet-count">${total}</span>
-          </div>
-        </article>
-      `;
-    }).join("");
+            <!-- Sparkline Grafik Garis Live per Komponen -->
+            <div class="mon-device-sparkline-wrap">
+              <canvas id="sparkline-mon-${devIdNum}" height="48"></canvas>
+            </div>
+            <div class="mon-device-foot">
+              <span id="mon-foot-time-${devIdNum}">${timeText}</span>
+              <span class="mon-packet-count" id="mon-foot-count-${devIdNum}">${total}</span>
+            </div>
+          </article>
+        `;
+      }).join("");
+    } else {
+      // In-place update tanpa merusak elemen canvas
+      devices.forEach(dev => {
+        const isWarn = dev.status === "WARNING";
+        const isVib = dev.device_id.toLowerCase().includes("vibration");
+        const devIdNum = getJingduanDeviceId(dev.device_id, dev.raw_payload);
+        const ago = dev.last_seen_seconds_ago;
+        const timeText = ago !== undefined
+          ? (ago < 5 ? "Baru saja" : ago < 60 ? `${ago}d lalu` : `${Math.floor(ago / 60)}m lalu`)
+          : formatTime(dev.recorded_at || dev.created_at);
+        const total = dev.total_messages ? `${dev.total_messages} pkt` : "-";
+        const valStr = isVib ? (dev.pressure != null ? fmtNum(dev.pressure, 3) : "-") : (dev.temperature != null ? fmtNum(dev.temperature, 1) : "-");
+        const unitStr = isVib ? "in/s" : (dev.temperature != null ? "°C" : "");
+
+        const card = document.getElementById(`mon-card-${devIdNum}`);
+        if (card) {
+          if (isWarn) card.classList.add("warn");
+          else card.classList.remove("warn");
+        }
+        setText(`mon-val-${devIdNum}`, valStr);
+        setText(`mon-unit-${devIdNum}`, unitStr);
+        const badge = document.getElementById(`mon-badge-${devIdNum}`);
+        if (badge) {
+          badge.className = `mon-badge ${isWarn ? "mon-badge-off" : "mon-badge-ok"}`;
+          badge.textContent = isWarn ? "WARN" : "OK";
+        }
+        setText(`mon-foot-time-${devIdNum}`, timeText);
+        setText(`mon-foot-count-${devIdNum}`, total);
+      });
+    }
 
     setText("mon-last-updated", new Date().toLocaleTimeString("id-ID"));
+
+    // Gambar grafik garis segera setelah data baru masuk
+    renderMonitoringLiveCharts();
   } catch {}
 }
 
@@ -2387,6 +2435,13 @@ function advanceStreamTimeline() {
   } else if (activeView === "pdm") {
     renderPdmView();
   }
+
+  // Gambar ulang grafik garis Live Monitoring secara real-time
+  const monView = document.getElementById("view-monitoring");
+  const isMonActive = activeView === "monitoring" || (monView && (monView.style.display !== "none" && !monView.style.display.includes("none")));
+  if (isMonActive) {
+    renderMonitoringLiveCharts();
+  }
 }
 
 function updateLiveStreamingKpis() {
@@ -2896,12 +2951,300 @@ function renderDashboardMatrix(devices) {
   }).join("");
 }
 
+// ========================================================
+// 10. REAL-TIME STREAMING MONITORING LINE CHARTS
+// ========================================================
+
+let monSensorFilter = "all"; // 'all', 'temp', 'vib'
+
+function setMonSensorFilter(filterKey, btn) {
+  monSensorFilter = filterKey;
+  const group = document.getElementById("mon-sensor-chart-filter");
+  if (group) {
+    group.querySelectorAll(".mon-pill-btn").forEach(b => b.classList.remove("active"));
+    if (btn) btn.classList.add("active");
+  }
+  renderMonitoringLiveCharts();
+}
+
+const monSensorConfigs = [
+  { id: "0", label: "Link Temp (#0)", color: "#f59e0b", type: "temp", valEl: "mon-leg-val-0" },
+  { id: "3", label: "Right Bush (#3)", color: "#2563eb", type: "temp", valEl: "mon-leg-val-3" },
+  { id: "4", label: "Left Bush (#4)", color: "#06b6d4", type: "temp", valEl: "mon-leg-val-4" },
+  { id: "5", label: "Right Bearing (#5)", color: "#10b981", type: "temp", valEl: "mon-leg-val-5" },
+  { id: "6", label: "Left Bearing (#6)", color: "#ec4899", type: "temp", valEl: "mon-leg-val-6" },
+  { id: "1", label: "Vibration (#1)", color: "#8b5cf6", type: "vib", valEl: "mon-leg-val-1" },
+];
+
+function renderMonitoringLiveCharts() {
+  initStreamBuffers();
+
+  const monView = document.getElementById("view-monitoring");
+  if (!monView || (monView.style.display === "none" && activeView !== "monitoring")) return;
+
+  const dpr = window.devicePixelRatio || 1;
+
+  // 1. Gambar Sparkline Garis pada Setiap Kartu Sensor Komponen
+  monSensorConfigs.forEach(cfg => {
+    const canvas = document.getElementById(`sparkline-mon-${cfg.id}`);
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const w = Math.max(80, rect.width || canvas.parentElement?.clientWidth || 140);
+    const h = 48;
+
+    if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+    }
+
+    const ctx = canvas.getContext("2d");
+    ctx.save();
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, w, h);
+
+    const pts = streamSeriesMap[cfg.id] || [];
+    if (pts.length < 2) {
+      ctx.restore();
+      return;
+    }
+
+    const isVib = cfg.type === "vib";
+    let minVal = isVib ? 0.01 : 20.0;
+    let maxVal = isVib ? 0.08 : 65.0;
+
+    pts.forEach(p => {
+      if (p.val < minVal) minVal = p.val;
+      if (p.val > maxVal) maxVal = p.val;
+    });
+
+    const span = (maxVal - minVal) * 1.15 || 1;
+    const baseMin = minVal - (maxVal - minVal) * 0.08;
+
+    const padX = 2;
+    const padY = 5;
+    const plotW = w - padX * 2;
+    const plotH = h - padY * 2;
+    const totalSlots = STREAM_WINDOW_SIZE;
+
+    // Gradient Area Fill di bawah garis
+    const grad = ctx.createLinearGradient(0, padY, 0, h);
+    grad.addColorStop(0, cfg.color + "50");
+    grad.addColorStop(1, cfg.color + "05");
+
+    ctx.beginPath();
+    pts.forEach((pt, idx) => {
+      const x = padX + (idx / (totalSlots - 1)) * plotW;
+      const y = padY + plotH - ((pt.val - baseMin) / span) * plotH;
+      if (idx === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    const lastX = padX + ((pts.length - 1) / (totalSlots - 1)) * plotW;
+    ctx.lineTo(lastX, h);
+    ctx.lineTo(padX, h);
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Gambar Garis Waveform
+    ctx.beginPath();
+    pts.forEach((pt, idx) => {
+      const x = padX + (idx / (totalSlots - 1)) * plotW;
+      const y = padY + plotH - ((pt.val - baseMin) / span) * plotH;
+      if (idx === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = cfg.color;
+    ctx.lineWidth = 1.8;
+    ctx.lineJoin = "round";
+    ctx.stroke();
+
+    // Beacon pada data point terakhir
+    const latestPt = pts[pts.length - 1];
+    const endY = padY + plotH - ((latestPt.val - baseMin) / span) * plotH;
+
+    ctx.beginPath();
+    ctx.arc(lastX, endY, 3, 0, Math.PI * 2);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+    ctx.strokeStyle = cfg.color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.restore();
+  });
+
+  // 2. Gambar Grafik Garis Utama Multi-Series Live Stream
+  const mainCanvas = document.getElementById("canvas-mon-live-chart");
+  if (!mainCanvas) return;
+
+  const mRect = mainCanvas.getBoundingClientRect();
+  const mW = Math.max(300, mRect.width || mainCanvas.parentElement?.clientWidth || 700);
+  const mH = 200;
+
+  if (mainCanvas.width !== Math.floor(mW * dpr) || mainCanvas.height !== Math.floor(mH * dpr)) {
+    mainCanvas.width = Math.floor(mW * dpr);
+    mainCanvas.height = Math.floor(mH * dpr);
+  }
+
+  const mCtx = mainCanvas.getContext("2d");
+  mCtx.save();
+  mCtx.scale(dpr, dpr);
+  mCtx.clearRect(0, 0, mW, mH);
+
+  const mPad = { top: 20, right: monSensorFilter === "all" ? 54 : 25, bottom: 28, left: 45 };
+  const mPlotW = mW - mPad.left - mPad.right;
+  const mPlotH = mH - mPad.top - mPad.bottom;
+
+  // Filter konfigurasi sensor
+  const activeSensors = monSensorConfigs.filter(s => {
+    if (monSensorFilter === "temp") return s.type === "temp";
+    if (monSensorFilter === "vib") return s.type === "vib";
+    return true;
+  });
+
+  // Tentukan Rentang Skala Y
+  const isVibOnly = monSensorFilter === "vib";
+  const minY = 0;
+  const maxY = isVibOnly ? 0.12 : 80;
+
+  // Gambar Grid Sumbu Y
+  mCtx.strokeStyle = "#f1f5f9";
+  mCtx.lineWidth = 1;
+  mCtx.fillStyle = "#64748b";
+  mCtx.font = "10px 'JetBrains Mono', monospace";
+  mCtx.textAlign = "right";
+
+  const ySteps = isVibOnly ? [0, 0.03, 0.06, 0.09, 0.12] : [0, 20, 40, 60, 80];
+  ySteps.forEach(yVal => {
+    const yPos = mPad.top + mPlotH - ((yVal - minY) / (maxY - minY)) * mPlotH;
+    mCtx.beginPath();
+    mCtx.moveTo(mPad.left, yPos);
+    mCtx.lineTo(mW - mPad.right, yPos);
+    mCtx.stroke();
+    const lbl = isVibOnly ? `${yVal.toFixed(2)}` : `${yVal}°C`;
+    mCtx.fillText(lbl, mPad.left - 6, yPos + 3.5);
+  });
+
+  // Jika mode "all", gambar label sekunder di kanan untuk getaran (0 - 0.12 in/s)
+  if (monSensorFilter === "all") {
+    mCtx.textAlign = "left";
+    mCtx.fillStyle = "#8b5cf6";
+    const vSteps = [0, 0.03, 0.06, 0.09, 0.12];
+    vSteps.forEach(vVal => {
+      const yPos = mPad.top + mPlotH - (vVal / 0.12) * mPlotH;
+      mCtx.fillText(`${vVal.toFixed(2)} in/s`, mW - mPad.right + 6, yPos + 3.5);
+    });
+  }
+
+  // Garis Limit Threshold Peringatan (Ambang Batas)
+  mCtx.save();
+  mCtx.setLineDash([4, 4]);
+  mCtx.strokeStyle = "#ef4444";
+  mCtx.lineWidth = 1.2;
+  const warnLimitVal = isVibOnly ? 0.08 : 75;
+  const yWarn = mPad.top + mPlotH - ((warnLimitVal - minY) / (maxY - minY)) * mPlotH;
+  mCtx.beginPath();
+  mCtx.moveTo(mPad.left, yWarn);
+  mCtx.lineTo(mW - mPad.right, yWarn);
+  mCtx.stroke();
+  mCtx.fillStyle = "#ef4444";
+  mCtx.textAlign = "right";
+  mCtx.font = "bold 9px 'JetBrains Mono', monospace";
+  mCtx.fillText(isVibOnly ? "0.08 in/s" : "75°C", mW - mPad.right - 8, yWarn - 4);
+  mCtx.restore();
+
+  // Pulse effect untuk titik data terbaru
+  const pulseR = 4.5 + Math.sin(Date.now() / 200) * 2;
+  const totalSlots = STREAM_WINDOW_SIZE;
+
+  // Gambar Setiap Garis Sensor
+  activeSensors.forEach(cfg => {
+    const points = streamSeriesMap[cfg.id] || [];
+    if (points.length === 0) return;
+
+    const latestPt = points[points.length - 1];
+    const isVib = cfg.type === "vib";
+    const valText = latestPt ? (isVib ? `${fmtNum(latestPt.val, 3)} in/s` : `${fmtNum(latestPt.val, 1)} °C`) : "--";
+    setText(cfg.valEl, valText);
+
+    if (points.length < 2) return;
+
+    mCtx.beginPath();
+    mCtx.strokeStyle = cfg.color;
+    mCtx.lineWidth = isVib ? 2.4 : 2.0;
+    mCtx.lineJoin = "round";
+
+    points.forEach((pt, idx) => {
+      const xPos = mPad.left + (idx / (totalSlots - 1)) * mPlotW;
+      let normVal = pt.val;
+      if (monSensorFilter === "all" && isVib) {
+        // Normalisasikan vibration (0 - 0.12) ke rentang temperatur (0 - 80)
+        normVal = (pt.val / 0.12) * 80;
+      }
+      const clamped = Math.min(maxY, Math.max(minY, normVal));
+      const yPos = mPad.top + mPlotH - ((clamped - minY) / (maxY - minY)) * mPlotH;
+
+      if (idx === 0) mCtx.moveTo(xPos, yPos);
+      else mCtx.lineTo(xPos, yPos);
+    });
+    mCtx.stroke();
+
+    // Gambar titik data & denyut beacon live
+    points.forEach((pt, idx) => {
+      const isLast = idx === points.length - 1;
+      if (idx % 4 !== 0 && !isLast) return;
+
+      const xPos = mPad.left + (idx / (totalSlots - 1)) * mPlotW;
+      let normVal = pt.val;
+      if (monSensorFilter === "all" && isVib) {
+        normVal = (pt.val / 0.12) * 80;
+      }
+      const clamped = Math.min(maxY, Math.max(minY, normVal));
+      const yPos = mPad.top + mPlotH - ((clamped - minY) / (maxY - minY)) * mPlotH;
+
+      if (isLast) {
+        mCtx.save();
+        mCtx.beginPath();
+        mCtx.arc(xPos, yPos, pulseR, 0, Math.PI * 2);
+        mCtx.fillStyle = cfg.color + "33";
+        mCtx.fill();
+        mCtx.restore();
+      }
+
+      mCtx.beginPath();
+      mCtx.arc(xPos, yPos, isLast ? 3.5 : 2, 0, Math.PI * 2);
+      mCtx.fillStyle = "#ffffff";
+      mCtx.fill();
+      mCtx.strokeStyle = cfg.color;
+      mCtx.lineWidth = 1.8;
+      mCtx.stroke();
+    });
+  });
+
+  // Gambar Label Sumbu X (Timeline Waktu)
+  mCtx.fillStyle = "#64748b";
+  mCtx.font = "9px 'JetBrains Mono', monospace";
+  mCtx.textAlign = "center";
+  const xLabels = ["-30s", "-20s", "-10s", "Sekarang (Live)"];
+  xLabels.forEach((lbl, i) => {
+    const xPos = mPad.left + (i / 3) * mPlotW;
+    mCtx.fillText(lbl, xPos, mH - 10);
+  });
+
+  mCtx.restore();
+}
+
 // Window resize listener to re-draw canvas charts smoothly
 window.addEventListener("resize", () => {
   const dashView = document.getElementById("view-dashboard");
   if (dashView && dashView.style.display !== "none") {
     renderTemperatureChart();
     renderVibrationChart();
+  }
+  const monView = document.getElementById("view-monitoring");
+  if (monView && monView.style.display !== "none") {
+    renderMonitoringLiveCharts();
   }
 });
 
