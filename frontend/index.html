@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Text:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="assets/logo-mtm-icon.png">
-  <link rel="stylesheet" href="style.css?v=2.0.38">
+  <link rel="stylesheet" href="style.css?v=2.3.0">
 </head>
 <body>
 
@@ -78,12 +78,8 @@
     <div class="login-card">
       <!-- MTM & Astra Branding -->
       <div class="login-header">
-        <div class="logo-geometric">
-          <!-- Stylized double wing logo -->
-          <svg width="44" height="28" viewBox="0 0 50 32" fill="none">
-            <path d="M0 16L18 0H32L14 16H0Z" fill="#111827"/>
-            <path d="M18 32L36 16H50L32 32H18Z" fill="#111827"/>
-          </svg>
+        <div class="logo-geometric" title="Maintenance Service">
+          <img src="assets/logo-maintenance.png" alt="Maintenance Logo" class="login-maintenance-logo-img">
         </div>
         <div class="logo-divider"></div>
         <div class="logo-official-group">
@@ -147,7 +143,114 @@
 
 
   <!-- ======================================================== -->
-  <!-- 2. MAIN APPLICATION LAYOUT                               -->
+  <!-- 1B. HUB SCREEN / CARD LAUNCHER (Matches Reference Image) -->
+  <!-- ======================================================== -->
+  <div id="hub-screen" class="hub-container" style="display: none;">
+    <div class="hub-bg-overlay"></div>
+
+    <div class="hub-content-wrap">
+      <!-- Main White Rounded Card -->
+      <div class="hub-card">
+        <!-- Logo Header -->
+        <div class="hub-header-brand">
+          <img src="assets/logo-mtm.jpg" alt="PT Menara Terus Makmur - A Member of ASTRA Otoparts Group" class="hub-brand-logo-img">
+        </div>
+
+        <!-- Official Header Title -->
+        <h1 class="hub-title">MAINTENANCE APPS</h1>
+
+        <!-- 3 Module Cards Grid -->
+        <div class="hub-cards-grid">
+          
+          <!-- CARD 1: PREVENTIVE MAINTENANCE (Under Development) -->
+          <div class="hub-module-card hub-card-disabled" onclick="handlePmClick()" title="Klik untuk informasi status modul">
+            <div class="hub-icon-box">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+            </div>
+            <h3 class="hub-card-title">PREVENTIVE MAINTENANCE</h3>
+            <p class="hub-card-subtitle">Periodic Inspection, Checklist & PM Schedule</p>
+            <div class="hub-card-pill pill-muted">
+              <span class="hub-pill-dot dot-gray"></span>
+              <span>Dalam Pengembangan</span>
+            </div>
+          </div>
+
+          <!-- CARD 2: PREDICTIVE MAINTENANCE (ACTIVE - Click to Enter) -->
+          <div class="hub-module-card hub-card-active" onclick="enterPredictiveMaintenance()" title="Buka Modul Predictive Maintenance">
+            <!-- Notification Badge top-right -->
+            <div class="hub-badge-notification" title="3 Fitur Tersedia">1</div>
+            
+            <div class="hub-icon-box">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                <polyline points="9 12 11 14 15 10"></polyline>
+              </svg>
+            </div>
+            <h3 class="hub-card-title">PREDICTIVE MAINTENANCE</h3>
+            <p class="hub-card-subtitle">IoT Health Dashboard, Live Monitoring & Riwayat Data</p>
+            <div class="hub-card-pill pill-action">
+              <span class="hub-pill-dot dot-red"></span>
+              <span>1 Butuh Tindakan</span>
+            </div>
+          </div>
+
+          <!-- CARD 3: CORRECTIVE MAINTENANCE (Under Development) -->
+          <div class="hub-module-card hub-card-disabled" onclick="handleCmClick()" title="Klik untuk informasi status modul">
+            <div class="hub-icon-box">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+            </div>
+            <h3 class="hub-card-title">CORRECTIVE MAINTENANCE</h3>
+            <p class="hub-card-subtitle">Breakdown, Ticket Repair & Quick Response</p>
+            <div class="hub-card-pill pill-muted">
+              <span class="hub-pill-dot dot-gray"></span>
+              <span>Dalam Pengembangan</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Bottom Action Row inside White Card -->
+        <div class="hub-bottom-row">
+          <button type="button" class="hub-btn hub-btn-admin" onclick="showSystemInfoModal()" title="Status Sistem & Koneksi Server">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span>Portal Admin</span>
+          </button>
+
+          <button type="button" class="hub-btn hub-btn-logout" onclick="handleLogout()" title="Keluar dari sesi sistem">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            <span>Keluar (Logout)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Footer Outside Card -->
+      <footer class="hub-footer">
+        &copy; 2026 PT Menara Terus Makmur &mdash; All rights reserved.
+      </footer>
+    </div>
+  </div>
+
+
+  <!-- ======================================================== -->
+  <!-- 2. MAIN APPLICATION LAYOUT (PREDICTIVE MAINTENANCE)      -->
   <!-- ======================================================== -->
   <div id="main-app" class="app-layout" style="display: none;">
     
@@ -157,35 +260,43 @@
       <div class="sidebar-brand">
         <div class="brand-mtm-logo-full">
           <img src="assets/logo-mtm.jpg" alt="PT Menara Terus Makmur - ASTRA Otoparts Group" class="sidebar-mtm-full-img">
-          <span class="brand-app-name-tag">MAINTENANCE APPS</span>
         </div>
       </div>
 
-      <!-- Navigation Menu -->
+      <!-- Module Section Header (Sleek, Modern & Non-Rigid) -->
+      <div class="sidebar-module-header">
+        <div class="module-chip">
+          <span class="module-chip-dot"></span>
+          <span class="module-chip-text">Predictive Maintenance</span>
+        </div>
+      </div>
+
+      <!-- Navigation Menu: Dashboard, Monitoring, Riwayat Data Masuk -->
       <nav class="sidebar-nav">
         <button class="nav-item active" id="nav-dashboard" onclick="switchMainView('dashboard')" data-short="DB">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
           <span>Dashboard</span>
         </button>
 
         <button class="nav-item" id="nav-monitoring" onclick="switchMainView('monitoring')" data-short="MON">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
           <span>Monitoring</span>
-          <span class="nav-live-indicator">LIVE</span>
         </button>
 
-        <button class="nav-item" id="nav-cm" onclick="switchMainView('cm')" data-short="CM">
-          <span>Corrective Maint.</span>
-        </button>
-
-        <button class="nav-item" id="nav-pm" onclick="switchMainView('pm')" data-short="PM">
-          <span>Preventive Maint.</span>
-        </button>
-
-        <button class="nav-item" id="nav-pdm" onclick="switchMainView('pdm')" data-short="PdM">
-          <span>Predictive (MPC)</span>
-        </button>
-
-        <button class="nav-item" id="nav-tpm" onclick="switchMainView('tpm')" data-short="TPM">
-          <span>TPM Control</span>
+        <button class="nav-item" id="nav-history" onclick="switchMainView('history')" data-short="HIST">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 14 14"></polyline>
+            <path d="M3 12a9 9 0 0 1 9-9"></path>
+          </svg>
+          <span>Riwayat Data Masuk</span>
         </button>
       </nav>
 
@@ -281,19 +392,41 @@
           </button>
 
           <!-- Dropdown Menu (Opens Upwards Above Bottom Bar) -->
-          <div class="sidebar-user-dropdown" id="sidebar-user-dropdown" style="display: none; position: absolute; bottom: calc(100% + 8px); left: 0; right: 0; background: #ffffff; border: 1px solid #dbeafe; border-radius: 14px; box-shadow: 0 -10px 25px rgba(15, 23, 42, 0.12); padding: 8px 0; z-index: 100;">
-            <div class="dropdown-user-header">
-              <strong id="dropdown-user-name">Administrator</strong>
-              <small id="dropdown-user-role">PIC Maintenance</small>
+          <div class="sidebar-user-dropdown" id="sidebar-user-dropdown" style="display: none; position: absolute; bottom: calc(100% + 8px); left: 0; right: 0; background: #ffffff; border: 1.5px solid #dbeafe; border-radius: 16px; box-shadow: 0 -12px 30px rgba(15, 23, 42, 0.16); padding: 8px 6px; z-index: 100;">
+            <div class="dropdown-user-header" style="padding: 6px 10px 10px; border-bottom: 1px solid #f1f5f9; margin-bottom: 6px;">
+              <strong id="dropdown-user-name" style="display:block; font-size:0.88rem; color:#0f172a;">Administrator</strong>
+              <small id="dropdown-user-role" style="color:#64748b; font-size:0.74rem;">PIC Maintenance</small>
             </div>
-            <div class="dropdown-divider"></div>
-            <button type="button" class="dropdown-item" onclick="handleLogout()">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                <polyline points="16 17 21 12 16 7"></polyline>
-                <line x1="21" y1="12" x2="9" y2="12"></line>
-              </svg>
-              Keluar / Logout
+            
+            <!-- OPTION 1: PILIH MENU / KEMBALI KE HUB -->
+            <button type="button" class="sidebar-dropdown-action-btn btn-action-menu" onclick="returnToHub()" title="Kembali ke Portal 3 Modul Maintenance">
+              <div class="btn-action-icon blue">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="14" width="7" height="7"></rect>
+                  <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+              </div>
+              <div class="btn-action-text">
+                <strong>Pilih Menu</strong>
+                <small>Portal 3 Modul Maintenance</small>
+              </div>
+            </button>
+
+            <!-- OPTION 2: KELUAR / LOGOUT -->
+            <button type="button" class="sidebar-dropdown-action-btn btn-action-logout" onclick="handleLogout()" title="Keluar dari sesi sistem">
+              <div class="btn-action-icon red">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+              </div>
+              <div class="btn-action-text">
+                <strong style="color:#e11d48;">Keluar (Logout)</strong>
+                <small>Akhiri Sesi Aplikasi</small>
+              </div>
             </button>
           </div>
         </div>
@@ -387,92 +520,7 @@
             </div>
           </div>
 
-          <!-- 3 PILLARS OF MAINTENANCE STRIP -->
-          <div class="maintenance-pillars-strip" id="dash-maintenance-pillars">
-            <!-- 1. CORRECTIVE MAINTENANCE (CM) -->
-            <div class="pillar-card cm" onclick="switchMainView('cm')">
-              <div class="pillar-head">
-                <div class="pillar-badge-group">
-                  <span class="pillar-type red">CM</span>
-                  <span class="pillar-trigger red">PRODUKSI</span>
-                </div>
-                <span class="pillar-badge-count red" id="dash-cm-count">2 Tiket Aktif</span>
-              </div>
-              <div class="pillar-title">Corrective Maintenance</div>
-              <table class="pillar-table">
-                <tbody>
-                  <tr>
-                    <td class="pt-label">Open Breakdown</td>
-                    <td class="pt-val"><span class="stat-val red" id="dash-cm-open">2 Kasus</span></td>
-                  </tr>
-                  <tr>
-                    <td class="pt-label">Target MTTR</td>
-                    <td class="pt-val"><span class="stat-val">&lt; 30 mnt</span></td>
-                  </tr>
-                  <tr>
-                    <td class="pt-label">Response Time</td>
-                    <td class="pt-val"><span class="stat-val green">&lt; 5 mnt</span></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
 
-            <!-- 2. PREVENTIVE MAINTENANCE (PM) -->
-            <div class="pillar-card pm" onclick="switchMainView('pm')">
-              <div class="pillar-head">
-                <div class="pillar-badge-group">
-                  <span class="pillar-type amber">PM</span>
-                  <span class="pillar-trigger amber">MAINTENANCE</span>
-                </div>
-                <span class="pillar-badge-count amber" id="dash-pm-count">1 Overdue, 2 Mendatang</span>
-              </div>
-              <div class="pillar-title">Preventive Maintenance</div>
-              <table class="pillar-table">
-                <tbody>
-                  <tr>
-                    <td class="pt-label">Kepatuhan Jadwal</td>
-                    <td class="pt-val"><span class="stat-val green" id="dash-pm-compliance">25.0%</span></td>
-                  </tr>
-                  <tr>
-                    <td class="pt-label">Stroke Warning</td>
-                    <td class="pt-val"><span class="stat-val amber" id="dash-pm-stroke-warn">1 Jig</span></td>
-                  </tr>
-                  <tr>
-                    <td class="pt-label">Jadwal Bulan Ini</td>
-                    <td class="pt-val"><span class="stat-val" id="dash-pm-total">4 Task</span></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <!-- 3. PREDICTIVE MAINTENANCE (PdM) -->
-            <div class="pillar-card pdm" onclick="switchMainView('pdm')">
-              <div class="pillar-head">
-                <div class="pillar-badge-group">
-                  <span class="pillar-type blue">PdM</span>
-                  <span class="pillar-trigger blue">MPC</span>
-                </div>
-                <span class="pillar-badge-count blue" id="dash-pdm-health">Health: 99.2%</span>
-              </div>
-              <div class="pillar-title">Predictive Maintenance</div>
-              <table class="pillar-table">
-                <tbody>
-                  <tr>
-                    <td class="pt-label">MPC Status</td>
-                    <td class="pt-val"><span class="stat-val green" id="dash-pdm-status">OPTIMAL</span></td>
-                  </tr>
-                  <tr>
-                    <td class="pt-label">Indeks Anomali</td>
-                    <td class="pt-val"><span class="stat-val green" id="dash-pdm-anomaly">0 Terdeteksi</span></td>
-                  </tr>
-                  <tr>
-                    <td class="pt-label">Sensor Kritis</td>
-                    <td class="pt-val"><span class="stat-val blue">6 Titik Online</span></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
 
           <!-- Charts Grid (2 Utama: Suhu Multi-Titik & Getaran) -->
           <div class="dash-charts-grid">
@@ -616,162 +664,265 @@
 
 
       <!-- ======================================================== -->
-      <!-- VIEW 4: MONITORING VIEW (IoT MQTT + Telemetry Live)     -->
+      <!-- ======================================================== -->
+      <!-- VIEW 4: MONITORING VIEW (Pure White & Blue Industrial IoT) -->
       <!-- ======================================================== -->
       <div id="view-monitoring" class="content-view" style="display: none;">
-        <div class="mon-page">
+        <div class="mon-clean-wrap">
 
-          <!-- Action Bar (Hanya Button Refresh) -->
-          <div class="mon-toolbar-row">
-            <button id="btn-refresh" class="mon-btn-refresh-only" onclick="refreshAll()" title="Refresh Data Monitoring">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-              <span>Refresh</span>
+          <!-- 1. TOP TOOLBAR (KONTROL TELEMETRI & SAMPLING) -->
+          <div class="mon-top-bar">
+            <div class="mon-top-left">
+              <!-- Mesin Node Aktif -->
+              <div class="mon-machine-badge" title="Mesin Forging Aktif">
+                <span class="mon-pulse-dot"></span>
+                <span class="mon-machine-title">JINGDUAN-630T</span>
+                <span class="mon-live-tag">LIVE</span>
+              </div>
+
+              <!-- Sensor Switcher Selector -->
+              <div class="mon-sep"></div>
+              <div class="mon-sensor-select-wrap">
+                <label for="stock-sensor-select" class="mon-select-lbl">Sensor Node:</label>
+                <select id="stock-sensor-select" class="mon-select-sensor" onchange="changeStockSensor(this.value)">
+                  <option value="0" selected>#0 Link Temp</option>
+                  <option value="3">#3 Right Bush</option>
+                  <option value="4">#4 Left Bush</option>
+                  <option value="5">#5 Right Bearing</option>
+                  <option value="6">#6 Left Bearing</option>
+                  <option value="1">#1 Vibration</option>
+                  <option value="all">★ Semua Sensor</option>
+                </select>
+              </div>
+
+              <!-- Sampling Window (1s, 5s, 15s, 1m) -->
+              <div class="mon-sep"></div>
+              <div class="mon-pills-group" id="stock-tf-pills">
+                <button type="button" class="mon-pill-btn" onclick="setStockTimeframe('1s', this)">1s</button>
+                <button type="button" class="mon-pill-btn active" onclick="setStockTimeframe('5s', this)">5s</button>
+                <button type="button" class="mon-pill-btn" onclick="setStockTimeframe('15s', this)">15s</button>
+                <button type="button" class="mon-pill-btn" onclick="setStockTimeframe('1m', this)">1m</button>
+              </div>
+
+              <!-- Visualisasi: Waveform vs Line Stream -->
+              <div class="mon-sep"></div>
+              <div class="mon-pills-group" id="stock-chart-type-pills">
+                <button type="button" class="mon-pill-btn active" onclick="setStockChartType('candle', this)" title="Waveform Sinyal Interval">Waveform</button>
+                <button type="button" class="mon-pill-btn" onclick="setStockChartType('line', this)" title="Garis Tren Stream">Line Stream</button>
+              </div>
+
+              <!-- Filter SMA & Threshold Limit -->
+              <div class="mon-sep"></div>
+              <div class="mon-indicators-group">
+                <button type="button" class="mon-ind-btn active" onclick="toggleStockIndicator('ma7')" id="btn-ind-ma7">SMA (7)</button>
+                <button type="button" class="mon-ind-btn active" onclick="toggleStockIndicator('ma21')" id="btn-ind-ma21">SMA (21)</button>
+                <button type="button" class="mon-ind-btn active" onclick="toggleStockIndicator('limit')" id="btn-ind-limit">Batas 75°C</button>
+              </div>
+            </div>
+
+            <div class="mon-top-right">
+              <!-- Live Telemetry Readout -->
+              <div class="mon-price-box">
+                <span class="mon-price-val" id="stock-live-price">38.50</span>
+                <span class="mon-price-unit" id="stock-live-unit">°C</span>
+                <span class="mon-change-badge up" id="stock-change-tag">
+                  <span id="stock-change-symbol">▲</span>
+                  <span id="stock-change-val">+0.40</span>
+                  <span id="stock-change-pct">(+1.05%)</span>
+                </span>
+              </div>
+
+              <!-- Status Operasional Mesin (Putih & Biru) -->
+              <div class="mon-status-badge" title="Mesin Beroperasi Normal">
+                <span class="mon-status-dot"></span>
+                <span>RUNNING</span>
+              </div>
+
+              <!-- Zoom Controls -->
+              <div class="mon-zoom-pills">
+                <button type="button" class="mon-zoom-btn" onclick="zoomStockChart(1)" title="Zoom In">+</button>
+                <button type="button" class="mon-zoom-btn" onclick="zoomStockChart(-1)" title="Zoom Out">−</button>
+              </div>
+
+              <!-- Snapshot -->
+              <button type="button" class="mon-zoom-btn" onclick="exportStockChartSnapshot()" title="Simpan Log Grafik">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- 2. SENSOR WATCHLIST BAR (KARTU SENSOR TELEMETRI PUTIH & BIRU) -->
+          <div class="mon-watchlist-grid" id="stock-watchlist-bar">
+            <button type="button" class="mon-sensor-chip active" data-id="0" onclick="changeStockSensor('0')">
+              <div class="msc-head">
+                <span class="msc-id">#0</span>
+                <span class="msc-title">Link Temp</span>
+                <span class="msc-dir up" id="watch-dir-0">▲</span>
+              </div>
+              <div class="msc-val-row">
+                <strong class="msc-val" id="watch-val-0">38.5 °C</strong>
+              </div>
+            </button>
+            <button type="button" class="mon-sensor-chip" data-id="3" onclick="changeStockSensor('3')">
+              <div class="msc-head">
+                <span class="msc-id">#3</span>
+                <span class="msc-title">Right Bush</span>
+                <span class="msc-dir up" id="watch-dir-3">▲</span>
+              </div>
+              <div class="msc-val-row">
+                <strong class="msc-val" id="watch-val-3">48.2 °C</strong>
+              </div>
+            </button>
+            <button type="button" class="mon-sensor-chip" data-id="4" onclick="changeStockSensor('4')">
+              <div class="msc-head">
+                <span class="msc-id">#4</span>
+                <span class="msc-title">Left Bush</span>
+                <span class="msc-dir down" id="watch-dir-4">▼</span>
+              </div>
+              <div class="msc-val-row">
+                <strong class="msc-val" id="watch-val-4">47.1 °C</strong>
+              </div>
+            </button>
+            <button type="button" class="mon-sensor-chip" data-id="5" onclick="changeStockSensor('5')">
+              <div class="msc-head">
+                <span class="msc-id">#5</span>
+                <span class="msc-title">Right Bearing</span>
+                <span class="msc-dir up" id="watch-dir-5">▲</span>
+              </div>
+              <div class="msc-val-row">
+                <strong class="msc-val" id="watch-val-5">44.8 °C</strong>
+              </div>
+            </button>
+            <button type="button" class="mon-sensor-chip" data-id="6" onclick="changeStockSensor('6')">
+              <div class="msc-head">
+                <span class="msc-id">#6</span>
+                <span class="msc-title">Left Bearing</span>
+                <span class="msc-dir down" id="watch-dir-6">▼</span>
+              </div>
+              <div class="msc-val-row">
+                <strong class="msc-val" id="watch-val-6">43.6 °C</strong>
+              </div>
+            </button>
+            <button type="button" class="mon-sensor-chip" data-id="1" onclick="changeStockSensor('1')">
+              <div class="msc-head">
+                <span class="msc-id">#1</span>
+                <span class="msc-title">Vibration</span>
+                <span class="msc-dir up" id="watch-dir-1">▲</span>
+              </div>
+              <div class="msc-val-row">
+                <strong class="msc-val" id="watch-val-1">0.045 in/s</strong>
+              </div>
             </button>
           </div>
 
-          <!-- Area Konten yang Dapat Digulir di Bawah Header Tetap -->
-          <div class="mon-scroll-area">
-
-            <!-- Devices (6 Titik Komponen Jingduan Forging & Live Line Charts) -->
-            <section class="mon-panel mon-panel-sensors">
-              <div class="mon-panel-head">
-                <h3>Sensor Komponen Mesin</h3>
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <div class="mon-chart-filter-pills" id="mon-sensor-chart-filter">
-                    <button type="button" class="mon-pill-btn active" onclick="setMonSensorFilter('all', this)">Semua</button>
-                    <button type="button" class="mon-pill-btn" onclick="setMonSensorFilter('temp', this)">Suhu</button>
-                    <button type="button" class="mon-pill-btn" onclick="setMonSensorFilter('vib', this)">Getaran</button>
-                  </div>
-                  <span class="mon-count" id="device-count-tag">0 Komponen</span>
+          <!-- 3. GRAFIK MONITORING LIVE UTAMA (LATAR PUTIH & BIRU INDUSTRI) -->
+          <div class="mon-chart-card">
+            <div class="mon-chart-head">
+              <div class="mon-chart-title-area">
+                <span class="mon-sensor-badge" id="stock-active-name">Link Temperature (#0)</span>
+                <div class="mon-ohlc-items">
+                  <span>Min: <strong id="stock-stat-low">37.80</strong></span>
+                  <span>Max: <strong id="stock-stat-high">39.40</strong></span>
+                  <span>Live: <strong id="stock-stat-close">38.50</strong></span>
+                  <span>Data: <strong id="stock-stat-vol">2,840 pkt</strong></span>
+                  <span style="display: none;"><strong id="stock-stat-open">38.10</strong></span>
                 </div>
               </div>
-
-              <!-- 6 Kartu Komponen dengan Grafik Garis Real-time di setiap kartu -->
-              <div class="mon-device-grid" id="devices-container">
-                <div class="mon-empty"><div class="mini-spinner"></div><p>Memuat data...</p></div>
-              </div>
-
-              <!-- Area Grafik Garis Multi-Series Real-time Komprehensif -->
-              <div class="mon-telemetry-chart-card">
-                <div class="mon-chart-top-bar">
-                  <span class="mon-chart-heading">Grafik Telemetri</span>
-                </div>
-
-                <div class="mon-chart-canvas-container" id="mon-chart-canvas-container">
-                  <canvas id="canvas-mon-live-chart" height="190"></canvas>
-                  <div id="mon-chart-tooltip" class="dash-chart-tooltip"></div>
-                </div>
-
-                <!-- Legend Interaktif Live -->
-                <div class="mon-chart-legend" id="mon-chart-legend">
-                  <div class="mon-leg-item" data-id="0">
-                    <span class="mon-leg-dot" style="background:#f59e0b;"></span>
-                    <span class="mon-leg-name">Link Temp (#0)</span>
-                    <strong class="mon-leg-val" id="mon-leg-val-0">-- °C</strong>
-                  </div>
-                  <div class="mon-leg-item" data-id="3">
-                    <span class="mon-leg-dot" style="background:#2563eb;"></span>
-                    <span class="mon-leg-name">Right Bush (#3)</span>
-                    <strong class="mon-leg-val" id="mon-leg-val-3">-- °C</strong>
-                  </div>
-                  <div class="mon-leg-item" data-id="4">
-                    <span class="mon-leg-dot" style="background:#06b6d4;"></span>
-                    <span class="mon-leg-name">Left Bush (#4)</span>
-                    <strong class="mon-leg-val" id="mon-leg-val-4">-- °C</strong>
-                  </div>
-                  <div class="mon-leg-item" data-id="5">
-                    <span class="mon-leg-dot" style="background:#10b981;"></span>
-                    <span class="mon-leg-name">Right Bearing (#5)</span>
-                    <strong class="mon-leg-val" id="mon-leg-val-5">-- °C</strong>
-                  </div>
-                  <div class="mon-leg-item" data-id="6">
-                    <span class="mon-leg-dot" style="background:#ec4899;"></span>
-                    <span class="mon-leg-name">Left Bearing (#6)</span>
-                    <strong class="mon-leg-val" id="mon-leg-val-6">-- °C</strong>
-                  </div>
-                  <div class="mon-leg-item" data-id="1">
-                    <span class="mon-leg-dot" style="background:#8b5cf6;"></span>
-                    <span class="mon-leg-name">Vibration (#1)</span>
-                    <strong class="mon-leg-val" id="mon-leg-val-1">-- in/s</strong>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <!-- Grid 2 Kolom untuk Live Stream & Riwayat Telemetri -->
-            <div class="mon-tables-grid">
-
-              <!-- Live Stream (Panel Kiri) -->
-              <section class="mon-panel table-panel">
-                <div class="mon-panel-head">
-                  <div>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                      <span class="pulse-indicator"></span>
-                      <h3>Live Stream Telemetri</h3>
-                    </div>
-                  </div>
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <button class="mon-btn-ghost-sm" onclick="showMqttPayloadGuideModal()" title="Panduan Format Data JSON MQTT">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-                      Format JSON
-                    </button>
-                    <span class="mon-pill-badge green" id="badge-mqtt-stream">Live</span>
-                  </div>
-                </div>
-                <div class="mon-table-wrap mon-table-scroll">
-                  <table class="mon-table modern-stream-table">
-                    <thead>
-                      <tr>
-                        <th style="width:130px;">Waktu</th>
-                        <th>Sensor / Komponen</th>
-                        <th style="width:140px;">Nilai Terukur</th>
-                        <th style="width:110px;">Status</th>
-                        <th style="text-align:center; width:56px;">Raw</th>
-                      </tr>
-                    </thead>
-                    <tbody id="terminal-stream">
-                      <tr><td colspan="5" class="mon-table-empty">Menunggu data telemetri...</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-
-              <!-- History (Panel Bawah) -->
-              <section class="mon-panel table-panel">
-                <div class="mon-panel-head">
-                  <div>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                      <span class="database-indicator"></span>
-                      <h3>Riwayat Telemetri</h3>
-                    </div>
-                  </div>
-                  <div>
-                    <select id="filter-device" class="mon-select modern-filter-select">
-                      <option value="">Semua Sensor</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="mon-table-wrap mon-table-scroll">
-                  <table class="mon-table modern-stream-table">
-                    <thead>
-                      <tr>
-                        <th style="width:75px;">No</th>
-                        <th>Sensor / Komponen</th>
-                        <th style="width:140px;">Nilai Terukur</th>
-                        <th style="width:110px;">Status</th>
-                        <th style="width:160px;">Waktu Rekam</th>
-                        <th style="text-align:center; width:56px;">Raw</th>
-                      </tr>
-                    </thead>
-                    <tbody id="telemetry-table-body">
-                      <tr><td colspan="6" class="mon-table-empty">Belum ada data.</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-
             </div>
 
+            <!-- Canvas Stack (Latar Putih Bersih) -->
+            <div class="mon-canvas-wrap" id="stock-canvas-container">
+              <canvas id="canvas-mon-live-chart" height="340"></canvas>
+
+              <!-- Crosshair Hover HUD (Parameter Telemetri Real-Time) -->
+              <div id="stock-crosshair-hud" class="mon-crosshair-hud" style="display: none;">
+                <span class="mhud-time" id="hud-time">--:--:--</span>
+                <span class="mhud-item">Min: <strong id="hud-low">--</strong></span>
+                <span class="mhud-item">Max: <strong id="hud-high">--</strong></span>
+                <span class="mhud-item">Val: <strong id="hud-close">--</strong></span>
+                <span class="mhud-item mhud-ma7" id="hud-ma7-wrap">SMA7: <strong id="hud-ma7">--</strong></span>
+                <span class="mhud-item mhud-ma21" id="hud-ma21-wrap">SMA21: <strong id="hud-ma21">--</strong></span>
+                <span style="display: none;" id="hud-open">--</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. LOG TELEMETRI REAL-TIME (7 KOLOM, BERSIH TANPA RAW DATA JSON) -->
+          <div class="mon-table-card">
+            <div class="mon-table-head">
+              <div class="mon-table-title-area">
+                <h3>Log Telemetri Real-Time</h3>
+                <span class="mon-tick-badge" id="rt-count-badge">0 Data</span>
+              </div>
+
+              <div class="mon-table-tools">
+                <div class="mon-pills-group" id="rt-filter-pills">
+                  <button type="button" class="mon-pill-btn active" onclick="setRtFilter('all', this)">Semua Node</button>
+                  <button type="button" class="mon-pill-btn" onclick="setRtFilter('up', this)">▲ Naik</button>
+                  <button type="button" class="mon-pill-btn" onclick="setRtFilter('down', this)">▼ Turun</button>
+                  <button type="button" class="mon-pill-btn" onclick="setRtFilter('warn', this)">⚠️ Warning</button>
+                </div>
+
+                <div class="mon-search-wrap">
+                  <input type="text" id="rt-search-input" class="mon-search-input" placeholder="Cari sensor / nilai..." oninput="filterRunningTrades()">
+                </div>
+
+                <div class="mon-table-actions">
+                  <button type="button" class="mon-action-btn" id="btn-rt-pause" onclick="toggleRtPause()" title="Jeda Aliran Telemetri">
+                    <span id="rt-pause-icon">⏸️</span>
+                    <span id="rt-pause-lbl">Pause</span>
+                  </button>
+                  <button type="button" class="mon-action-btn" onclick="clearRunningTrades()" title="Bersihkan Log">
+                    <span>🗑️ Clear</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tabel Data Telemetri (7 Kolom) -->
+            <div class="mon-table-responsive">
+              <table class="mon-table">
+                <thead>
+                  <tr>
+                    <th style="width: 110px;">Waktu Log</th>
+                    <th style="width: 220px;">Sensor Node / Parameter</th>
+                    <th style="width: 140px; text-align: right;">Nilai Telemetri</th>
+                    <th style="width: 130px; text-align: right;">Delta (Δ)</th>
+                    <th style="width: 110px; text-align: right;">% Drift</th>
+                    <th style="width: 130px; text-align: center;">Status</th>
+                    <th style="width: 140px; text-align: center;">Arah Tren</th>
+                  </tr>
+                </thead>
+                <tbody id="stock-running-trade-body">
+                  <tr><td colspan="7" class="mon-empty-state">Menunggu data telemetri masuk dari broker MQTT...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Hidden Compatibility Containers so existing code won't error -->
+          <div style="display: none;">
+            <canvas id="canvas-mon-bandar-value"></canvas>
+            <canvas id="canvas-mon-bandar-volume"></canvas>
+            <div id="det-vol-top1"></div>
+            <div id="det-rp-top1"></div>
+            <div id="det-vol-top3"></div>
+            <div id="det-rp-top3"></div>
+            <div id="det-vol-top5"></div>
+            <div id="det-rp-top5"></div>
+            <div id="det-vol-avg"></div>
+            <div id="det-rp-avg"></div>
+            <div id="det-buyer-count"></div>
+            <div id="det-seller-count"></div>
+            <div id="det-diff-count"></div>
+            <div id="det-net-vol"></div>
+            <div id="det-net-val"></div>
+            <div id="det-avg-val"></div>
+            <div id="devices-container"></div>
+            <div id="terminal-stream"></div>
+            <div id="telemetry-table-body"></div>
+            <select id="filter-device"></select>
+            <span id="device-count-tag"></span>
           </div>
 
         </div>
@@ -1038,6 +1189,118 @@
         </div>
       </div>
 
+
+      <!-- ======================================================== -->
+      <!-- VIEW 7: RIWAYAT DATA MASUK (PREDICTIVE MAINTENANCE)      -->
+      <!-- ======================================================== -->
+      <div id="view-history" class="content-view" style="display: none;">
+        <div class="history-page">
+          
+          <!-- History Header Row -->
+          <div class="history-header-card">
+            <div class="history-header-info">
+              <h2 class="history-title">Riwayat Data Masuk</h2>
+            </div>
+            <div class="history-actions-group">
+              <button type="button" class="btn-refresh-hist" onclick="fetchHistoryTelemetry()" title="Tarik data terbaru dari server">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+                <span>Sinkronisasi Data</span>
+              </button>
+              <button type="button" class="btn-export-hist" onclick="exportHistoryCsv()" title="Unduh seluruh data riwayat dalam format spreadsheet CSV">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>Ekspor CSV</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- History 4 KPI Ribbon -->
+          <div class="history-kpi-grid">
+            <div class="history-kpi-item">
+              <div class="kpi-icon blue">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+              </div>
+              <div class="kpi-content">
+                <span class="kpi-label">Total Data Masuk</span>
+                <div class="kpi-value"><strong id="hist-kpi-total">0</strong> <span>Record</span></div>
+              </div>
+            </div>
+
+            <div class="history-kpi-item">
+              <div class="kpi-icon purple">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>
+              </div>
+              <div class="kpi-content">
+                <span class="kpi-label">Titik Sensor Aktif</span>
+                <div class="kpi-value"><strong id="hist-kpi-devices">6</strong> <span>Sensor</span></div>
+              </div>
+            </div>
+
+            <div class="history-kpi-item">
+              <div class="kpi-icon green">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+              </div>
+              <div class="kpi-content">
+                <span class="kpi-label">Status Normal</span>
+                <div class="kpi-value"><strong id="hist-kpi-compliance">100%</strong> <span>Aman</span></div>
+              </div>
+            </div>
+
+            <div class="history-kpi-item">
+              <div class="kpi-icon cyan">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+              </div>
+              <div class="kpi-content">
+                <span class="kpi-label">Update Terakhir</span>
+                <div class="kpi-value"><strong id="hist-kpi-last-time">--:--:--</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Grouping Selector Tabs Strip -->
+          <div class="history-group-tabs-card">
+            <div class="history-group-tabs">
+              <button type="button" class="hist-group-btn active" id="hist-btn-sensor" onclick="setHistoryGroupMode('sensor')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                <span>Per Sensor</span>
+              </button>
+
+              <button type="button" class="hist-group-btn" id="hist-btn-status" onclick="setHistoryGroupMode('status')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                <span>Per Status</span>
+              </button>
+
+              <button type="button" class="hist-group-btn" id="hist-btn-shift" onclick="setHistoryGroupMode('shift')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+                <span>Per Shift</span>
+              </button>
+
+              <button type="button" class="hist-group-btn" id="hist-btn-raw" onclick="setHistoryGroupMode('raw')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                <span>Semua Data</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Dynamic Grouped Content Container -->
+          <div id="history-grouped-container" class="history-dynamic-container">
+            <!-- Dynamically populated via renderHistoryView() in app.js -->
+            <div class="history-loading-placeholder">
+              <div class="spinner-small"></div>
+              <span>Menyiapkan pengelompokan riwayat data sensor...</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
       </div> <!-- /.main-content-scroll -->
     </main>
   </div>
@@ -1249,6 +1512,450 @@
     </div>
   </div>
 
-  <script src="app.js?v=2.0.38"></script>
+  <!-- ======================================================== -->
+  <!-- MODAL: PORTAL ADMINISTRATOR & MASTER DATA               -->
+  <!-- ======================================================== -->
+  <div id="modal-system-info" class="modal-backdrop" style="display: none;" onclick="closeModalOnBackdrop(event, 'modal-system-info')">
+    <div class="modal-dialog admin-portal-modal">
+      
+      <!-- Modal Header -->
+      <div class="modal-header" style="border-bottom: 2px solid #bfdbfe; padding: 14px 22px; flex-shrink: 0; background: #ffffff;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:42px; height:42px; border-radius:12px; background:linear-gradient(135deg, #1d4ed8, #2563eb); display:flex; align-items:center; justify-content:center; color:#ffffff; box-shadow: 0 4px 12px rgba(37,99,235,0.25);">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" fill="none"></circle>
+            </svg>
+          </div>
+          <div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="pillar-type blue" style="font-size:0.68rem; font-weight:800; letter-spacing:0.06em;">PORTAL ADMINISTRATOR</span>
+              <span style="background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; font-size:0.68rem; font-weight:700; padding:1px 8px; border-radius:999px;">Master Data & Access Control</span>
+            </div>
+            <h3 class="modal-title" style="margin:2px 0 0; font-size:1.15rem; color:#0f172a; font-weight:800;">Manajemen Master Data & User Role</h3>
+          </div>
+        </div>
+        <button class="modal-btn-close" onclick="closeModal('modal-system-info')" title="Tutup Portal Admin">&times;</button>
+      </div>
+
+      <!-- Navigation Tab Bar -->
+      <div class="admin-portal-tabs-nav">
+        <button type="button" class="admin-tab-btn active" id="admin-tab-btn-users" onclick="switchAdminPortalTab('users')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          <span>User Role & Akses</span>
+          <span class="admin-tab-count" id="count-admin-users">5</span>
+        </button>
+        <button type="button" class="admin-tab-btn" id="admin-tab-btn-machines" onclick="switchAdminPortalTab('machines')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+          <span>Master Mesin & Line</span>
+          <span class="admin-tab-count" id="count-admin-machines">4</span>
+        </button>
+        <button type="button" class="admin-tab-btn" id="admin-tab-btn-sensors" onclick="switchAdminPortalTab('sensors')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10H12V2z"></path><path d="M12 2a10 10 0 0 1 10 10h-10V2z"></path><path d="M12 12L2.5 7.5"></path></svg>
+          <span>Master Sensor & Ambang IoT</span>
+          <span class="admin-tab-count" id="count-admin-sensors">6</span>
+        </button>
+        <button type="button" class="admin-tab-btn" id="admin-tab-btn-shifts" onclick="switchAdminPortalTab('shifts')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <span>Master Shift Pabrik</span>
+          <span class="admin-tab-count" id="count-admin-shifts">3</span>
+        </button>
+        <button type="button" class="admin-tab-btn" id="admin-tab-btn-system" onclick="switchAdminPortalTab('system')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          <span>Status Sistem & Server</span>
+        </button>
+      </div>
+
+      <!-- Scrollable Tab Content Body -->
+      <div class="modal-body admin-portal-body">
+        
+        <!-- PANE 1: MASTER USERS & USER ROLES -->
+        <div id="admin-pane-users" class="admin-tab-pane">
+          <div class="admin-toolbar-row">
+            <div class="admin-search-wrap">
+              <input type="text" id="admin-user-search" class="admin-search-input" placeholder="Cari NPK, nama, atau username..." oninput="filterAdminUsersTable()">
+              <select id="admin-user-role-filter" class="admin-filter-select" onchange="filterAdminUsersTable()">
+                <option value="">Semua Role</option>
+                <option value="Super Admin">Super Admin</option>
+                <option value="Maintenance Engineer">Maintenance Engineer</option>
+                <option value="Maintenance Technician">Maintenance Technician</option>
+                <option value="Line Leader Produksi">Line Leader Produksi</option>
+                <option value="Section Head">Section Head</option>
+              </select>
+            </div>
+            <button type="button" class="btn-primary" onclick="openAddUserModal()" style="font-size:0.8rem; padding:8px 14px; gap:6px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>Tambah User Baru</span>
+            </button>
+          </div>
+
+          <div style="overflow-x:auto;">
+            <table class="admin-data-table" id="admin-users-table">
+              <thead>
+                <tr>
+                  <th style="width: 100px;">NPK</th>
+                  <th>Nama Lengkap</th>
+                  <th>User Role</th>
+                  <th>Departemen / Seksi</th>
+                  <th>Status</th>
+                  <th>Terakhir Login</th>
+                  <th style="text-align: right; width: 140px;">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="admin-users-tbody">
+                <!-- Populated via renderAdminUsersTable() -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Role Access Level Matrix Card -->
+          <div style="margin-top:20px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:16px;">
+            <div style="font-size:0.82rem; font-weight:800; color:#0f172a; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              <span>Hak Akses & Otoritas Role (Matrix Role Access)</span>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px;">
+              <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:10px;">
+                <span class="role-badge purple" style="margin-bottom:4px;">Super Admin</span>
+                <p style="font-size:0.72rem; color:#64748b; margin:4px 0 0;">Akses penuh Master Data, Konfigurasi Sistem, User Management & Database.</p>
+              </div>
+              <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:10px;">
+                <span class="role-badge blue" style="margin-bottom:4px;">Maintenance Engineer</span>
+                <p style="font-size:0.72rem; color:#64748b; margin:4px 0 0;">Analisis PdM, threshold sensor IoT, evaluasi anomali vibrasi & suhu mesin.</p>
+              </div>
+              <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:10px;">
+                <span class="role-badge cyan" style="margin-bottom:4px;">Maintenance Technician</span>
+                <p style="font-size:0.72rem; color:#64748b; margin:4px 0 0;">Eksekusi checklist PM rutin, respon tiket breakdown CM & perbaikan part.</p>
+              </div>
+              <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:10px;">
+                <span class="role-badge amber" style="margin-bottom:4px;">Line Leader Produksi</span>
+                <p style="font-size:0.72rem; color:#64748b; margin:4px 0 0;">Monitoring status line mesin live, input pelaporan breakdown CM darurat.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANE 2: MASTER MESIN & LINE -->
+        <div id="admin-pane-machines" class="admin-tab-pane" style="display:none;">
+          <div class="admin-toolbar-row">
+            <div class="admin-search-wrap">
+              <input type="text" id="admin-machine-search" class="admin-search-input" placeholder="Cari kode mesin, nama mesin, atau line..." oninput="filterAdminMachinesTable()">
+            </div>
+            <button type="button" class="btn-primary" onclick="openAddMachineModal()" style="font-size:0.8rem; padding:8px 14px; gap:6px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>Tambah Mesin Baru</span>
+            </button>
+          </div>
+
+          <div style="overflow-x:auto;">
+            <table class="admin-data-table" id="admin-machines-table">
+              <thead>
+                <tr>
+                  <th style="width: 130px;">Kode Aset Mesin</th>
+                  <th>Nama Mesin & Merk</th>
+                  <th>Line Pabrik</th>
+                  <th>Kapasitas</th>
+                  <th>Status IoT Telemetri</th>
+                  <th>Target MTBF / MTTR</th>
+                  <th>PIC Mesin</th>
+                  <th style="text-align: right; width: 100px;">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="admin-machines-tbody">
+                <!-- Populated via renderAdminMachinesTable() -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- PANE 3: MASTER SENSOR & PARAMETER IOT -->
+        <div id="admin-pane-sensors" class="admin-tab-pane" style="display:none;">
+          <div class="admin-toolbar-row">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:0.82rem; font-weight:800; color:#0f172a;">Mesin Terpasang:</span>
+              <span style="background:#eff6ff; color:#1d4ed8; font-weight:700; font-size:0.75rem; padding:2px 8px; border-radius:6px; border:1px solid #bfdbfe;">Jingduan Forging Press 630T (Line 2)</span>
+            </div>
+            <div style="font-size:0.75rem; color:#64748b;">Klik <strong>Edit Ambang Batas</strong> untuk menyesuaikan threshold sensor.</div>
+          </div>
+
+          <div style="overflow-x:auto;">
+            <table class="admin-data-table" id="admin-sensors-table">
+              <thead>
+                <tr>
+                  <th style="width: 140px;">Sensor Device ID</th>
+                  <th>Nama Titik Sensor & Posisi</th>
+                  <th>Parameter & Satuan</th>
+                  <th>Ambang Warning</th>
+                  <th>Ambang Critical</th>
+                  <th>Sampling Rate</th>
+                  <th>Status Sensor</th>
+                  <th style="text-align: right; width: 130px;">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="admin-sensors-tbody">
+                <!-- Populated via renderAdminSensorsTable() -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- PANE 4: MASTER SHIFT PABRIK -->
+        <div id="admin-pane-shifts" class="admin-tab-pane" style="display:none;">
+          <div style="margin-bottom:14px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:12px 16px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <strong style="color:#1e40af; font-size:0.85rem;">Standar Jam Operasional 3-Shift PT MTM</strong>
+              <p style="margin:2px 0 0; font-size:0.74rem; color:#3b82f6;">Pengelompokan riwayat telemetri otomatis disinkronkan dengan jam kerja ini.</p>
+            </div>
+            <span style="background:#2563eb; color:#ffffff; font-weight:800; font-size:0.72rem; padding:4px 10px; border-radius:999px;">24 Jam Non-Stop</span>
+          </div>
+
+          <div style="overflow-x:auto;">
+            <table class="admin-data-table" id="admin-shifts-table">
+              <thead>
+                <tr>
+                  <th style="width: 110px;">Kode Shift</th>
+                  <th>Nama Shift</th>
+                  <th>Jam Kerja (Mulai - Selesai)</th>
+                  <th>Durasi Kerja</th>
+                  <th>Toleransi Handover</th>
+                  <th>Shift Leader PIC</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="admin-shifts-tbody">
+                <!-- Populated via renderAdminShiftsTable() -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- PANE 5: STATUS SISTEM & SERVER -->
+        <div id="admin-pane-system" class="admin-tab-pane" style="display:none;">
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:16px; margin-bottom:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <strong style="color:#0f172a; font-size:0.95rem;">MAINTENANCE APPS PLATFORM</strong>
+              <span style="background:#dbeafe; color:#1d4ed8; font-weight:700; font-size:0.75rem; padding:3px 10px; border-radius:999px;">v2.4 Enterprise</span>
+            </div>
+            <p style="font-size:0.8rem; color:#64748b; margin:0;">Platform Terintegrasi Pemeliharaan Mesin Produksi PT Menara Terus Makmur &mdash; A Member of ASTRA Otoparts Group.</p>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; padding:14px;">
+              <div style="font-size:0.72rem; color:#166534; font-weight:700; text-transform:uppercase;">Backend Telemetri API</div>
+              <div style="font-size:1rem; font-weight:800; color:#15803d; margin:4px 0;">ONLINE (HTTP 200)</div>
+              <div style="font-size:0.74rem; color:#16a34a;">Port 4000 &bull; http://localhost:4000/api</div>
+            </div>
+            <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:14px;">
+              <div style="font-size:0.72rem; color:#1e40af; font-weight:700; text-transform:uppercase;">IoT MQTT Broker Telemetri</div>
+              <div style="font-size:1rem; font-weight:800; color:#1d4ed8; margin:4px 0;">TERHUBUNG (6 Sensor)</div>
+              <div style="font-size:0.74rem; color:#2563eb;">Topic: sensor/telemetry (QoS 0)</div>
+            </div>
+          </div>
+
+          <table style="width:100%; font-size:0.82rem; border-collapse:collapse; background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden;">
+            <tbody>
+              <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:10px 14px; color:#64748b;">Mesin Monitoring Utama:</td>
+                <td style="padding:10px 14px; text-align:right; font-weight:700; color:#0f172a;">Jingduan Forging Press 630T (Line 2)</td>
+              </tr>
+              <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:10px 14px; color:#64748b;">Dual PostgreSQL Engine:</td>
+                <td style="padding:10px 14px; text-align:right; font-weight:700; color:#0f172a;">TimescaleDB (Hypertable) + Monitoring DB</td>
+              </tr>
+              <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:10px 14px; color:#64748b;">Status Master Data LocalStorage:</td>
+                <td style="padding:10px 14px; text-align:right; font-weight:700; color:#10b981;">Tersimpan & Sinkron Otomatis</td>
+              </tr>
+              <tr>
+                <td style="padding:10px 14px; color:#64748b;">Opsi Pengelolaan:</td>
+                <td style="padding:10px 14px; text-align:right;">
+                  <button type="button" class="admin-action-btn btn-danger-soft" onclick="resetMasterDataToDefault()" title="Kembalikan semua master data ke setelan awal pabrik">Reset Default Master Data</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <!-- Footer with Summary & Actions -->
+      <div class="modal-footer" style="padding: 12px 22px; border-top:1px solid #e2e8f0; background:#f8fafc; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+        <div style="font-size:0.75rem; color:#64748b; display:flex; align-items:center; gap:8px;">
+          <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981;"></span>
+          <span>Logged in as: <strong id="modal-admin-user" style="color:#0f172a;">Administrator</strong> (Super Admin)</span>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="btn-secondary" onclick="exportAdminMasterDataJson()" title="Unduh cadangan data master (JSON)">Ekspor JSON</button>
+          <button type="button" class="btn-primary" onclick="closeModal('modal-system-info')">Selesai & Tutup</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- SUB-MODAL: TAMBAH / EDIT USER MASTER DATA               -->
+  <!-- ======================================================== -->
+  <div id="modal-admin-user-form" class="modal-backdrop" style="display:none; z-index:2100;" onclick="closeModalOnBackdrop(event, 'modal-admin-user-form')">
+    <div class="modal-dialog" style="max-width:480px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="admin-user-modal-title">Tambah User & Role Baru</h3>
+        <button class="modal-btn-close" onclick="closeModal('modal-admin-user-form')">&times;</button>
+      </div>
+      <form onsubmit="handleSaveAdminUser(event)">
+        <div class="modal-body" style="padding:16px 20px; display:flex; flex-direction:column; gap:12px;">
+          <input type="hidden" id="form-user-edit-index" value="-1">
+          
+          <div class="form-group">
+            <label class="form-label">NPK Karyawan</label>
+            <input type="text" id="form-user-npk" class="form-control" placeholder="Contoh: MTM-1099" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Nama Lengkap</label>
+            <input type="text" id="form-user-nama" class="form-control" placeholder="Nama karyawan..." required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Username Login</label>
+            <input type="text" id="form-user-username" class="form-control" placeholder="username..." required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Role Akses</label>
+            <select id="form-user-role" class="form-control" required>
+              <option value="Super Admin">Super Admin</option>
+              <option value="Maintenance Engineer">Maintenance Engineer</option>
+              <option value="Maintenance Technician">Maintenance Technician</option>
+              <option value="Line Leader Produksi">Line Leader Produksi</option>
+              <option value="Section Head">Section Head</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Departemen / Seksi</label>
+            <input type="text" id="form-user-dept" class="form-control" placeholder="Contoh: Plant Maintenance" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Status Akun</label>
+            <select id="form-user-status" class="form-control">
+              <option value="Aktif">Aktif</option>
+              <option value="Nonaktif">Nonaktif</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer" style="padding:12px 20px;">
+          <button type="button" class="btn-secondary" onclick="closeModal('modal-admin-user-form')">Batal</button>
+          <button type="submit" class="btn-primary">Simpan User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- SUB-MODAL: EDIT AMBANG BATAS SENSOR IOT                 -->
+  <!-- ======================================================== -->
+  <div id="modal-admin-sensor-form" class="modal-backdrop" style="display:none; z-index:2100;" onclick="closeModalOnBackdrop(event, 'modal-admin-sensor-form')">
+    <div class="modal-dialog" style="max-width:460px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Kalibrasi Ambang Batas Sensor</h3>
+        <button class="modal-btn-close" onclick="closeModal('modal-admin-sensor-form')">&times;</button>
+      </div>
+      <form onsubmit="handleSaveSensorThreshold(event)">
+        <div class="modal-body" style="padding:16px 20px; display:flex; flex-direction:column; gap:12px;">
+          <input type="hidden" id="form-sensor-device-id">
+          
+          <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:10px 14px;">
+            <div style="font-size:0.72rem; color:#1e40af; font-weight:800; text-transform:uppercase;">Titik Sensor</div>
+            <div style="font-size:0.95rem; font-weight:800; color:#0f172a;" id="form-sensor-name-lbl">-</div>
+            <div style="font-size:0.72rem; color:#64748b;" id="form-sensor-machine-lbl">-</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" id="form-sensor-warn-lbl">Ambang Warning (Waspada)</label>
+            <input type="number" step="0.1" id="form-sensor-warn" class="form-control" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" id="form-sensor-crit-lbl">Ambang Critical (Bahaya / Anomali)</label>
+            <input type="number" step="0.1" id="form-sensor-crit" class="form-control" required>
+          </div>
+        </div>
+        <div class="modal-footer" style="padding:12px 20px;">
+          <button type="button" class="btn-secondary" onclick="closeModal('modal-admin-sensor-form')">Batal</button>
+          <button type="submit" class="btn-primary">Terapkan Threshold</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- SUB-MODAL: TAMBAH MESIN MASTER DATA                     -->
+  <!-- ======================================================== -->
+  <div id="modal-admin-machine-form" class="modal-backdrop" style="display:none; z-index:2100;" onclick="closeModalOnBackdrop(event, 'modal-admin-machine-form')">
+    <div class="modal-dialog" style="max-width:480px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Tambah Mesin Pabrik Baru</h3>
+        <button class="modal-btn-close" onclick="closeModal('modal-admin-machine-form')">&times;</button>
+      </div>
+      <form onsubmit="handleSaveAdminMachine(event)">
+        <div class="modal-body" style="padding:16px 20px; display:flex; flex-direction:column; gap:12px;">
+          <div class="form-group">
+            <label class="form-label">Kode Aset Mesin</label>
+            <input type="text" id="form-mch-code" class="form-control" placeholder="Contoh: MCH-FORG-800T" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nama Mesin & Merk</label>
+            <input type="text" id="form-mch-name" class="form-control" placeholder="Contoh: Jingduan Hot Forging 800T" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Line Produksi</label>
+            <input type="text" id="form-mch-line" class="form-control" placeholder="Contoh: Line 2 Forging" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Kapasitas / Tonase</label>
+            <input type="text" id="form-mch-cap" class="form-control" placeholder="Contoh: 800 Ton" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Target MTBF</label>
+            <input type="text" id="form-mch-mtbf" class="form-control" placeholder="Contoh: 150 Jam" value="150 Jam">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Target MTTR</label>
+            <input type="text" id="form-mch-mttr" class="form-control" placeholder="Contoh: 30 Menit" value="30 Menit">
+          </div>
+        </div>
+        <div class="modal-footer" style="padding:12px 20px;">
+          <button type="button" class="btn-secondary" onclick="closeModal('modal-admin-machine-form')">Batal</button>
+          <button type="submit" class="btn-primary">Simpan Mesin</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: RAW PAYLOAD JSON INSPECTOR                        -->
+  <!-- ======================================================== -->
+  <div id="modal-raw-payload" class="modal-backdrop" style="display: none;" onclick="closeModalOnBackdrop(event, 'modal-raw-payload')">
+    <div class="modal-dialog" style="max-width: 620px;">
+      <div class="modal-header">
+        <div>
+          <span class="pillar-type cyan" style="font-size:0.68rem;">JSON PAYLOAD</span>
+          <h3 class="modal-title" id="raw-payload-title" style="margin:0; font-size:1.1rem;">Detail Paket Telemetri IoT</h3>
+        </div>
+        <button class="modal-btn-close" onclick="closeModal('modal-raw-payload')">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 16px 20px;">
+        <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">Payload JSON mentah yang diterima sistem dari sensor IoT:</p>
+        <pre id="raw-payload-code" style="background:#0f172a; color:#38bdf8; padding:14px; border-radius:12px; font-family:'JetBrains Mono', monospace; font-size:0.8rem; overflow-x:auto; max-height:320px;"></pre>
+      </div>
+      <div class="modal-footer" style="padding: 12px 20px;">
+        <button type="button" class="btn-secondary" onclick="closeModal('modal-raw-payload')">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=2.3.0"></script>
 </body>
 </html>

@@ -427,16 +427,30 @@ function performLogin(user, showLoader = true) {
       if (span) span.textContent = "Login";
     }
 
-    document.getElementById("login-screen").style.display = "none";
-    document.getElementById("main-app").style.display = "flex";
+    const loginScreen = document.getElementById("login-screen");
+    if (loginScreen) loginScreen.style.display = "none";
 
-    // Render all views
+    const mainApp = document.getElementById("main-app");
+    if (mainApp) mainApp.style.display = "none";
+
+    const hub = document.getElementById("hub-screen");
+    if (hub) {
+      hub.style.display = "flex";
+      hub.style.opacity = "1";
+      hub.style.visibility = "visible";
+    }
+
+    // Set user info on hub admin modal
+    const modalAdminUser = document.getElementById("modal-admin-user");
+    if (modalAdminUser) modalAdminUser.textContent = roleName;
+
+    // Render all views in background
     renderAllViews();
 
     // Start polling backend telemetry
     startPolling();
 
-    showToast(`Selamat datang, ${roleName}!`, "success");
+    showToast(`Selamat datang, ${roleName}! Silakan pilih modul perawatan.`, "success");
   };
 
   if (showLoader) {
@@ -495,10 +509,82 @@ function handleLogout() {
     // Hide any open dropdown
     const dd = document.getElementById("topbar-user-dropdown");
     if (dd) dd.style.display = "none";
+    const ddSide = document.getElementById("sidebar-user-dropdown");
+    if (ddSide) ddSide.style.display = "none";
+
+    const hub = document.getElementById("hub-screen");
+    if (hub) hub.style.display = "none";
 
     document.getElementById("main-app").style.display = "none";
     document.getElementById("login-screen").style.display = "flex";
     showToast("Berhasil logout dari sistem.", "info");
+  }
+}
+
+// Hub Card Launcher Controllers
+function enterPredictiveMaintenance() {
+  const login = document.getElementById("login-screen");
+  if (login) login.style.display = "none";
+
+  const hub = document.getElementById("hub-screen");
+  if (hub) hub.style.display = "none";
+
+  const mainApp = document.getElementById("main-app");
+  if (mainApp) mainApp.style.display = "flex";
+
+  // Hide dropdown if open
+  const ddSide = document.getElementById("sidebar-user-dropdown");
+  if (ddSide) ddSide.style.display = "none";
+  const wrap = document.querySelector(".sidebar-user-wrap");
+  if (wrap) wrap.classList.remove("is-open");
+
+  // Default to Dashboard
+  switchMainView("dashboard");
+  showToast("Membuka Modul Predictive Maintenance", "info");
+}
+
+function returnToHub() {
+  const login = document.getElementById("login-screen");
+  if (login) login.style.display = "none";
+
+  const mainApp = document.getElementById("main-app");
+  if (mainApp) mainApp.style.display = "none";
+
+  // Hide dropdown if open
+  const ddSide = document.getElementById("sidebar-user-dropdown");
+  if (ddSide) ddSide.style.display = "none";
+  const wrap = document.querySelector(".sidebar-user-wrap");
+  if (wrap) wrap.classList.remove("is-open");
+
+  const hub = document.getElementById("hub-screen");
+  if (hub) {
+    hub.style.display = "flex";
+    hub.style.opacity = "1";
+    hub.style.visibility = "visible";
+  }
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  showToast("Kembali ke Menu Utama Portal MTM", "info");
+}
+
+function handleCmClick() {
+  showToast("Modul Corrective Maintenance sedang dalam tahap pengembangan.", "info");
+}
+
+function handlePmClick() {
+  showToast("Modul Preventive Maintenance sedang dalam tahap pengembangan.", "info");
+}
+
+function showSystemInfoModal() {
+  const modal = document.getElementById("modal-system-info");
+  if (modal) {
+    const adminUser = document.getElementById("modal-admin-user");
+    if (adminUser) {
+      adminUser.textContent = (currentUser && (currentUser.displayName || currentUser.username)) || "Administrator";
+    }
+    initAdminPortal();
+    switchAdminPortalTab("users");
+    modal.style.display = "flex";
   }
 }
 
@@ -572,8 +658,9 @@ function switchMainView(viewName) {
 
   // Sync Topbar Page Title
   const titles = {
-    dashboard: "DASHBOARD",
-    monitoring: "MONITORING",
+    dashboard: "DASHBOARD SENSOR (PREDICTIVE MAINTENANCE)",
+    monitoring: "MONITORING REAL-TIME (PREDICTIVE MAINTENANCE)",
+    history: "RIWAYAT DATA MASUK (PREDICTIVE MAINTENANCE)",
     tpm: "TPM CONTROL",
     drawing: "DRAWING MESIN",
     jig: "JIG & FIXTURE",
@@ -587,7 +674,7 @@ function switchMainView(viewName) {
     pageTitleEl.textContent = titles[viewName];
   }
 
-  const allViews = ["dashboard", "drawing", "jig", "monitoring", "tpm", "approval", "cm", "pm", "pdm"];
+  const allViews = ["dashboard", "drawing", "jig", "monitoring", "history", "tpm", "approval", "cm", "pm", "pdm"];
   allViews.forEach(v => {
     const el = document.getElementById(`view-${v}`);
     if (el) {
@@ -600,6 +687,8 @@ function switchMainView(viewName) {
     updatePillarDashboardCounts();
   } else if (viewName === "monitoring") {
     refreshAll();
+  } else if (viewName === "history") {
+    fetchHistoryTelemetry();
   } else if (viewName === "drawing") {
     renderDrawingTable();
   } else if (viewName === "jig") {
@@ -618,12 +707,575 @@ function switchMainView(viewName) {
 }
 
 // ========================================================
+// 3B. PREDICTIVE MAINTENANCE: RIWAYAT DATA & PENGELOMPOKAN
+// ========================================================
+
+let historyGroupMode = "sensor"; // 'sensor' | 'status' | 'shift' | 'raw'
+let telemetryHistoryData = [];
+
+const SENSOR_META = {
+  "link-temperature": {
+    name: "Suhu Link (Connecting Rod)",
+    type: "temperature",
+    unit: "°C",
+    threshold: "≤ 70.0 °C",
+    part: "Link Mechanism & Pin"
+  },
+  "right-eccentric-bush": {
+    name: "Suhu Bushing Eksentrik Kanan",
+    type: "temperature",
+    unit: "°C",
+    threshold: "≤ 70.0 °C",
+    part: "Right Main Shaft Bearing Bush"
+  },
+  "left-eccentric-bush": {
+    name: "Suhu Bushing Eksentrik Kiri",
+    type: "temperature",
+    unit: "°C",
+    threshold: "≤ 70.0 °C",
+    part: "Left Main Shaft Bearing Bush"
+  },
+  "right-transmission-bearing": {
+    name: "Suhu Bearing Transmisi Kanan",
+    type: "temperature",
+    unit: "°C",
+    threshold: "≤ 70.0 °C",
+    part: "Flywheel & Pinion Drive Right"
+  },
+  "left-transmission-bearing": {
+    name: "Suhu Bearing Transmisi Kiri",
+    type: "temperature",
+    unit: "°C",
+    threshold: "≤ 70.0 °C",
+    part: "Flywheel & Pinion Drive Left"
+  },
+  "vibration": {
+    name: "Getaran RMS (Velocity)",
+    type: "vibration",
+    unit: "in/s",
+    threshold: "< 0.10 in/s",
+    part: "Main Frame / Press Crown"
+  }
+};
+
+function setHistoryGroupMode(mode) {
+  historyGroupMode = mode;
+  document.querySelectorAll(".hist-group-btn").forEach(btn => btn.classList.remove("active"));
+  const activeBtn = document.getElementById(`hist-btn-${mode}`);
+  if (activeBtn) activeBtn.classList.add("active");
+  renderHistoryView();
+}
+
+async function fetchHistoryTelemetry() {
+  const container = document.getElementById("history-grouped-container");
+  try {
+    const res = await fetch(`${API_BASE_URL}/telemetry?limit=150`);
+    if (!res.ok) throw new Error("Gagal mengambil telemetri");
+    const data = await res.json();
+    telemetryHistoryData = Array.isArray(data) ? data : [];
+
+    // Update KPI Ribbon
+    const totalEl = document.getElementById("hist-kpi-total");
+    if (totalEl) totalEl.textContent = telemetryHistoryData.length;
+
+    const normalCount = telemetryHistoryData.filter(d => (d.status || "").toUpperCase() === "NORMAL").length;
+    const compPct = telemetryHistoryData.length > 0 
+      ? Math.round((normalCount / telemetryHistoryData.length) * 100) 
+      : 100;
+    const compEl = document.getElementById("hist-kpi-compliance");
+    if (compEl) compEl.textContent = `${compPct}%`;
+
+    const now = new Date();
+    const timeEl = document.getElementById("hist-kpi-last-time");
+    if (timeEl) timeEl.textContent = now.toTimeString().split(" ")[0];
+    const dateEl = document.getElementById("hist-kpi-last-date");
+    if (dateEl) dateEl.textContent = now.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+
+    renderHistoryView();
+  } catch (err) {
+    console.error("fetchHistoryTelemetry error:", err);
+    if (container) {
+      container.innerHTML = `
+        <div class="history-loading-placeholder" style="color:#e11d48; border-color:#fecdd3;">
+          <p>Terjadi kendala memuat data telemetri dari server (${err.message}). Menampilkan data lokal terakhir.</p>
+          <button class="btn-refresh-hist" onclick="fetchHistoryTelemetry()">Coba Lagi</button>
+        </div>
+      `;
+    }
+  }
+}
+
+function renderHistoryView() {
+  const container = document.getElementById("history-grouped-container");
+  if (!container) return;
+
+  if (telemetryHistoryData.length === 0) {
+    container.innerHTML = `
+      <div class="history-loading-placeholder">
+        <p>Belum ada data riwayat telemetri masuk. Sedang menyinkronkan dengan broker sensor...</p>
+        <button class="btn-refresh-hist" onclick="fetchHistoryTelemetry()">Muat Ulang</button>
+      </div>
+    `;
+    return;
+  }
+
+  if (historyGroupMode === "sensor") {
+    renderHistoryBySensor(container);
+  } else if (historyGroupMode === "status") {
+    renderHistoryByStatus(container);
+  } else if (historyGroupMode === "shift") {
+    renderHistoryByShift(container);
+  } else if (historyGroupMode === "raw") {
+    renderHistoryRawTable(container);
+  }
+}
+
+// 1. Grouping Per Titik Sensor (6 Kelompok Sensor Jingduan)
+function renderHistoryBySensor(container) {
+  const sensorKeys = Object.keys(SENSOR_META);
+
+  let html = `<div class="sensor-groups-grid">`;
+
+  sensorKeys.forEach(devId => {
+    const meta = SENSOR_META[devId];
+    const items = telemetryHistoryData.filter(d => d.device_id === devId);
+    const count = items.length;
+
+    let latestVal = "--";
+    let minVal = "--";
+    let maxVal = "--";
+    let avgVal = "--";
+    let latestStatus = "NORMAL";
+
+    if (count > 0) {
+      const isVib = meta.type === "vibration";
+      const values = items.map(d => {
+        if (isVib) {
+          return d.pressure !== null && d.pressure !== undefined ? Number(d.pressure) : Number(d.temperature || 0);
+        }
+        return Number(d.temperature || 0);
+      }).filter(v => !isNaN(v));
+
+      if (values.length > 0) {
+        const sum = values.reduce((a, b) => a + b, 0);
+        const avg = sum / values.length;
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const latest = values[0]; // Assuming items are newest first
+
+        latestVal = isVib ? latest.toFixed(4) : latest.toFixed(1);
+        avgVal = isVib ? avg.toFixed(4) : avg.toFixed(1);
+        minVal = isVib ? min.toFixed(4) : min.toFixed(1);
+        maxVal = isVib ? max.toFixed(4) : max.toFixed(1);
+        latestStatus = (items[0].status || "NORMAL").toUpperCase();
+      }
+    }
+
+    const statusBadgeClass = latestStatus === "CRITICAL" ? "critical" : (latestStatus === "WARNING" ? "warning" : "ok");
+
+    // Last 5 log items for this sensor
+    const recent5 = items.slice(0, 5);
+    let tableRows = "";
+    if (recent5.length > 0) {
+      recent5.forEach(r => {
+        const isVib = meta.type === "vibration";
+        const v = isVib 
+          ? (r.pressure !== null ? Number(r.pressure).toFixed(4) : Number(r.temperature || 0).toFixed(4))
+          : Number(r.temperature || 0).toFixed(1);
+        const timeStr = r.recorded_at 
+          ? new Date(r.recorded_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+          : "--:--:--";
+        const st = (r.status || "NORMAL").toUpperCase();
+        const stClass = st === "CRITICAL" ? "red" : (st === "WARNING" ? "amber" : "green");
+
+        tableRows += `
+          <tr>
+            <td style="color:#64748b; font-family:var(--font-mono);">${timeStr}</td>
+            <td><strong>${v}</strong> ${meta.unit}</td>
+            <td style="text-align:right;"><span class="dash-pill-status ${st === 'CRITICAL' ? 'crit' : (st === 'WARNING' ? 'warn' : 'ok')}" style="padding:1px 6px; font-size:0.62rem;">${st}</span></td>
+          </tr>
+        `;
+      });
+    } else {
+      tableRows = `<tr><td colspan="3" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada log</td></tr>`;
+    }
+
+    html += `
+      <div class="sensor-group-card">
+        <div class="sensor-group-header">
+          <div class="sensor-group-title-wrap">
+            <div class="sensor-group-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                ${meta.type === 'vibration' ? '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>' : '<path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>'}
+              </svg>
+            </div>
+            <div>
+              <div class="sensor-group-name">${meta.name}</div>
+              <div class="sensor-group-id-tag">${devId} &bull; ${meta.threshold}</div>
+            </div>
+          </div>
+          <span class="dash-pill-status ${statusBadgeClass}" style="padding:2px 8px; font-size:0.68rem;">
+            ${latestStatus}
+          </span>
+        </div>
+
+        <div class="sensor-stats-summary-row">
+          <div class="sensor-stat-cell">
+            <span class="stat-lbl">Terkini</span>
+            <span class="stat-val" style="color:#2563eb;">${latestVal}</span>
+          </div>
+          <div class="sensor-stat-cell">
+            <span class="stat-lbl">Rata-rata</span>
+            <span class="stat-val">${avgVal}</span>
+          </div>
+          <div class="sensor-stat-cell">
+            <span class="stat-lbl">Min/Max</span>
+            <span class="stat-val" style="font-size:0.75rem;">${minVal}/${maxVal}</span>
+          </div>
+          <div class="sensor-stat-cell">
+            <span class="stat-lbl">Sampel</span>
+            <span class="stat-val">${count}</span>
+          </div>
+        </div>
+
+        <div>
+          <table class="sensor-mini-log-table">
+            <thead>
+              <tr>
+                <th>Waktu</th>
+                <th>Nilai</th>
+                <th style="text-align:right;">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  });
+
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+// 2. Grouping Per Status Kondisi
+function renderHistoryByStatus(container) {
+  const normalItems = telemetryHistoryData.filter(d => (d.status || "").toUpperCase() === "NORMAL");
+  const warnItems = telemetryHistoryData.filter(d => (d.status || "").toUpperCase() === "WARNING");
+  const critItems = telemetryHistoryData.filter(d => (d.status || "").toUpperCase() === "CRITICAL");
+
+  const buildStatusRows = (items) => {
+    if (items.length === 0) {
+      return `<p style="font-size:0.78rem; color:#94a3b8; font-style:italic; padding:10px 0;">Tidak ada log pada kondisi ini.</p>`;
+    }
+    return items.slice(0, 10).map(r => {
+      const meta = SENSOR_META[r.device_id] || { name: r.device_id, unit: "" };
+      const val = meta.type === "vibration" 
+        ? (r.pressure !== null ? Number(r.pressure).toFixed(4) : Number(r.temperature || 0).toFixed(4))
+        : Number(r.temperature || 0).toFixed(1);
+      const timeStr = r.recorded_at 
+        ? new Date(r.recorded_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+        : "--:--:--";
+      return `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #f1f5f9; font-size:0.76rem;">
+          <div>
+            <strong style="color:#0f172a;">${meta.name}</strong>
+            <div style="font-size:0.68rem; color:#64748b;">${timeStr}</div>
+          </div>
+          <div style="font-weight:800; color:#1e293b;">
+            ${val} ${meta.unit}
+          </div>
+        </div>
+      `;
+    }).join("");
+  };
+
+  container.innerHTML = `
+    <div class="status-group-grid">
+      <div class="status-col-card col-normal">
+        <div class="status-col-header">
+          <span class="status-col-title">Normal</span>
+          <span class="status-col-badge">${normalItems.length} Log</span>
+        </div>
+        <div style="max-height:420px; overflow-y:auto; margin-top:8px;">
+          ${buildStatusRows(normalItems)}
+        </div>
+      </div>
+
+      <div class="status-col-card col-warning">
+        <div class="status-col-header">
+          <span class="status-col-title">Warning</span>
+          <span class="status-col-badge">${warnItems.length} Log</span>
+        </div>
+        <div style="max-height:420px; overflow-y:auto; margin-top:8px;">
+          ${buildStatusRows(warnItems)}
+        </div>
+      </div>
+
+      <div class="status-col-card col-critical">
+        <div class="status-col-header">
+          <span class="status-col-title">Critical</span>
+          <span class="status-col-badge">${critItems.length} Log</span>
+        </div>
+        <div style="max-height:420px; overflow-y:auto; margin-top:8px;">
+          ${buildStatusRows(critItems)}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// 3. Grouping Per Shift Operasional (Sesuai Jadwal Pabrik MTM)
+function renderHistoryByShift(container) {
+  const shift1 = []; // Shift 1: 00:00 - 07:40
+  const shift2 = []; // Shift 2: 07:30 - 16:10
+  const shift3 = []; // Shift 3: 16:10 - 00:00
+
+  telemetryHistoryData.forEach(d => {
+    const dt = new Date(d.recorded_at || d.created_at || Date.now());
+    const mins = dt.getHours() * 60 + dt.getMinutes();
+    
+    // Shift 1: 00:00 - 07:40 (0 - 460 menit)
+    // Shift 2: 07:30 - 16:10 (450 - 970 menit)
+    // Shift 3: 16:10 - 00:00 (>= 970 menit)
+    if (mins >= 0 && mins < 460) {
+      shift1.push(d);
+    } else if (mins >= 450 && mins < 970) {
+      shift2.push(d);
+    } else {
+      shift3.push(d);
+    }
+  });
+
+  const renderShiftBox = (title, timeLabel, badgeColor, items, shiftClass) => {
+    const count = items.length;
+    const normalCount = items.filter(d => (d.status || "").toUpperCase() === "NORMAL").length;
+    const compliance = count > 0 ? Math.round((normalCount / count) * 100) : 100;
+
+    const listHtml = items.slice(0, 8).map(r => {
+      const meta = SENSOR_META[r.device_id] || { name: r.device_id, unit: "" };
+      const val = meta.type === "vibration" 
+        ? (r.pressure !== null ? Number(r.pressure).toFixed(4) : Number(r.temperature || 0).toFixed(4))
+        : Number(r.temperature || 0).toFixed(1);
+      const timeStr = new Date(r.recorded_at || Date.now()).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+      const st = (r.status || "NORMAL").toUpperCase();
+      const stPill = st === "CRITICAL" ? "crit" : (st === "WARNING" ? "warn" : "ok");
+      return `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid #f1f5f9; font-size:0.75rem;">
+          <div>
+            <span style="color:#64748b; font-family:var(--font-mono); font-size:0.72rem;">${timeStr}</span>
+            <span style="color:#0f172a; font-weight:600; margin-left:6px;">${meta.name}</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <strong style="color:#1d4ed8;">${val} <small style="font-size:0.68rem; color:#64748b;">${meta.unit}</small></strong>
+            <span class="dash-pill-status ${stPill}" style="padding:1px 6px; font-size:0.6rem;">${st}</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    return `
+      <div class="shift-col-card ${shiftClass}">
+        <div class="shift-col-header">
+          <span class="shift-title">${title}</span>
+          <span class="shift-time-tag">${timeLabel}</span>
+        </div>
+        <div class="shift-stats-strip">
+          <div class="shift-stat-item">
+            <span class="shift-stat-lbl">TOTAL LOG</span>
+            <strong class="shift-stat-val">${count} Data</strong>
+          </div>
+          <div class="shift-stat-item" style="border-left:1px solid #e2e8f0; padding-left:12px;">
+            <span class="shift-stat-lbl">KEPATUHAN</span>
+            <strong class="shift-stat-val" style="color:#059669;">${compliance}% Normal</strong>
+          </div>
+        </div>
+        <div style="margin-top:6px;">
+          <div style="max-height:280px; overflow-y:auto; padding-right:2px;">
+            ${count > 0 ? listHtml : '<p style="color:#94a3b8; font-style:italic; font-size:0.75rem; text-align:center; padding:18px 0;">Belum ada catatan pada shift ini</p>'}
+          </div>
+        </div>
+      </div>
+    `;
+  };
+
+  container.innerHTML = `
+    <div class="shift-group-grid">
+      ${renderShiftBox("Shift 1", "00:00 - 07:40", "blue", shift1, "shift-1")}
+      ${renderShiftBox("Shift 2", "07:30 - 16:10", "amber", shift2, "shift-2")}
+      ${renderShiftBox("Shift 3", "16:10 - 00:00", "purple", shift3, "shift-3")}
+    </div>
+  `;
+}
+
+// 4. Log Kronologis Mentah & Pencarian
+function renderHistoryRawTable(container) {
+  let tableRows = "";
+  telemetryHistoryData.slice(0, 100).forEach((r, idx) => {
+    const meta = SENSOR_META[r.device_id] || { name: r.device_id, unit: "", threshold: "-" };
+    const isVib = meta.type === "vibration";
+    const val = isVib 
+      ? (r.pressure !== null ? Number(r.pressure).toFixed(4) : Number(r.temperature || 0).toFixed(4))
+      : Number(r.temperature || 0).toFixed(1);
+    const timeStr = r.recorded_at 
+      ? new Date(r.recorded_at).toLocaleString("id-ID") 
+      : "--";
+    const st = (r.status || "NORMAL").toUpperCase();
+    const stClass = st === "CRITICAL" ? "crit" : (st === "WARNING" ? "warn" : "ok");
+
+    tableRows += `
+      <tr class="raw-data-row" data-device="${r.device_id}" data-status="${st}">
+        <td style="color:#64748b; font-family:var(--font-mono);">${idx + 1}</td>
+        <td style="font-family:var(--font-mono); font-size:0.74rem;">${timeStr}</td>
+        <td>
+          <strong style="color:#0f172a;">${meta.name}</strong>
+          <div style="font-size:0.68rem; color:#64748b; font-family:var(--font-mono);">${r.device_id}</div>
+        </td>
+        <td><strong style="color:#1d4ed8; font-size:0.86rem;">${val}</strong> ${meta.unit}</td>
+        <td style="color:#64748b; font-size:0.74rem;">${meta.threshold}</td>
+        <td><span class="dash-pill-status ${stClass}">${st}</span></td>
+        <td style="text-align:center;">
+          <button type="button" class="raw-btn-inspect" onclick="showRawPayloadModal(${idx})" title="Lihat JSON mentah">
+            Inspect JSON
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+
+  container.innerHTML = `
+    <div class="raw-hist-card">
+      <div class="raw-hist-toolbar">
+        <div class="raw-hist-filters">
+          <select id="raw-filter-device" class="raw-select" onchange="filterHistoryRawTable()">
+            <option value="all">Semua Sensor</option>
+            <option value="link-temperature">Suhu Link</option>
+            <option value="right-eccentric-bush">Suhu Bushing Kanan</option>
+            <option value="left-eccentric-bush">Suhu Bushing Kiri</option>
+            <option value="right-transmission-bearing">Suhu Bearing Kanan</option>
+            <option value="left-transmission-bearing">Suhu Bearing Kiri</option>
+            <option value="vibration">Getaran RMS</option>
+          </select>
+
+          <select id="raw-filter-status" class="raw-select" onchange="filterHistoryRawTable()">
+            <option value="all">Semua Status</option>
+            <option value="NORMAL">Normal</option>
+            <option value="WARNING">Warning</option>
+            <option value="CRITICAL">Critical</option>
+          </select>
+
+          <input type="text" id="raw-search-input" class="raw-search-input" placeholder="Cari ID / nilai sensor..." onkeyup="filterHistoryRawTable()">
+        </div>
+        <span style="font-size:0.75rem; color:#64748b;">100 data transaksi terakhir</span>
+      </div>
+
+      <div class="table-container" style="max-height:480px; overflow-y:auto;">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th style="width:40px;">No</th>
+              <th style="width:170px;">Waktu Rekam</th>
+              <th>Nama Titik Sensor</th>
+              <th style="width:130px;">Nilai Sensor</th>
+              <th style="width:120px;">Standar Batas</th>
+              <th style="width:100px;">Status</th>
+              <th style="width:120px; text-align:center;">Payload</th>
+            </tr>
+          </thead>
+          <tbody id="raw-hist-table-body">
+            ${tableRows}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function filterHistoryRawTable() {
+  const deviceVal = document.getElementById("raw-filter-device")?.value || "all";
+  const statusVal = document.getElementById("raw-filter-status")?.value || "all";
+  const searchVal = (document.getElementById("raw-search-input")?.value || "").toLowerCase();
+
+  document.querySelectorAll(".raw-data-row").forEach(row => {
+    const dev = row.getAttribute("data-device") || "";
+    const st = row.getAttribute("data-status") || "";
+    const text = row.textContent.toLowerCase();
+
+    const matchDev = (deviceVal === "all" || dev === deviceVal);
+    const matchStatus = (statusVal === "all" || st === statusVal);
+    const matchSearch = (!searchVal || text.includes(searchVal));
+
+    if (matchDev && matchStatus && matchSearch) {
+      row.style.display = "";
+    } else {
+      row.style.display = "none";
+    }
+  });
+}
+
+function showRawPayloadModal(index) {
+  const modal = document.getElementById("modal-raw-payload");
+  const codeEl = document.getElementById("raw-payload-code");
+  const titleEl = document.getElementById("raw-payload-title");
+
+  if (!modal || !codeEl) return;
+  const item = telemetryHistoryData[index];
+  if (!item) return;
+
+  const meta = SENSOR_META[item.device_id] || { name: item.device_id };
+  if (titleEl) {
+    titleEl.textContent = `Payload: ${meta.name} (ID: ${item.id || index + 1})`;
+  }
+
+  codeEl.textContent = JSON.stringify(item, null, 2);
+  modal.style.display = "flex";
+}
+
+function exportHistoryCsv() {
+  if (telemetryHistoryData.length === 0) {
+    showToast("Tidak ada data telemetri untuk diekspor", "warning");
+    return;
+  }
+
+  const headers = ["ID", "RecordedAt", "CreatedAt", "DeviceID", "SensorName", "Temperature", "PressureRMS", "Status"];
+  const rows = telemetryHistoryData.map(d => {
+    const meta = SENSOR_META[d.device_id] || { name: d.device_id };
+    return [
+      `"${d.id || ""}"`,
+      `"${d.recorded_at || ""}"`,
+      `"${d.created_at || ""}"`,
+      `"${d.device_id || ""}"`,
+      `"${meta.name}"`,
+      d.temperature !== null ? d.temperature : "",
+      d.pressure !== null ? d.pressure : "",
+      `"${d.status || "NORMAL"}"`
+    ].join(",");
+  });
+
+  const csvContent = [headers.join(","), ...rows].join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `MTM_Predictive_Telemetry_History_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  showToast("File CSV Riwayat Telemetri berhasil diunduh!", "success");
+}
+
+// ========================================================
 // 4. KANBAN COLUMN RENDERERS & FILTERS
 // ========================================================
 
 // Render Column 1: TPM
 function renderTpmCards() {
   const container = document.getElementById("tpm-card-container");
+  if (!container) return;
   const searchVal = (document.getElementById("search-tpm")?.value || "").toLowerCase();
 
   const filtered = MTM_DATA.tpm.filter(item => {
@@ -678,6 +1330,7 @@ function filterTpmCards() {
 // Render Column 2: Task & Approval
 function renderTaskCards() {
   const container = document.getElementById("task-card-container");
+  if (!container) return;
   const searchVal = (document.getElementById("search-task")?.value || "").toLowerCase();
 
   const filtered = MTM_DATA.tasks.filter(t => {
@@ -759,6 +1412,7 @@ function rejectTask(taskId) {
 // Render Column 3: Lifetime Jig
 function renderLifetimeCards() {
   const container = document.getElementById("lifetime-card-container");
+  if (!container) return;
   const searchVal = (document.getElementById("search-lifetime")?.value || "").toLowerCase();
 
   const filtered = MTM_DATA.lifetimes.filter(item => {
@@ -814,6 +1468,7 @@ function filterLifetimeByStatus(status) {
 // Render Column 4: Stok Reminder
 function renderStockCards() {
   const container = document.getElementById("stock-card-container");
+  if (!container) return;
   const searchVal = (document.getElementById("search-stock")?.value || "").toLowerCase();
 
   const filtered = MTM_DATA.stocks.filter(item => {
@@ -884,23 +1539,30 @@ function orderStock(stockId) {
 
 // Update counters across Kanban headers
 function updateDashboardCounts() {
-  const tpmCnt = MTM_DATA.tpm.length;
-  const taskCnt = MTM_DATA.tasks.length;
-  const taskWaitCnt = MTM_DATA.tasks.filter(t => t.status === "menunggu").length;
-  const taskRevCnt = MTM_DATA.tasks.filter(t => t.status === "revisi").length;
+  const tpmCnt = MTM_DATA.tpm?.length || 0;
+  const taskCnt = MTM_DATA.tasks?.length || 0;
+  const taskWaitCnt = (MTM_DATA.tasks || []).filter(t => t.status === "menunggu").length;
+  const taskRevCnt = (MTM_DATA.tasks || []).filter(t => t.status === "revisi").length;
 
-  const habisCnt = MTM_DATA.stocks.filter(s => s.status === "Habis").length;
-  const menipisCnt = MTM_DATA.stocks.filter(s => s.status === "Menipis").length;
-  const amanCnt = MTM_DATA.stocks.filter(s => s.status === "Aman").length;
+  const habisCnt = (MTM_DATA.stocks || []).filter(s => s.status === "Habis").length;
+  const menipisCnt = (MTM_DATA.stocks || []).filter(s => s.status === "Menipis").length;
+  const amanCnt = (MTM_DATA.stocks || []).filter(s => s.status === "Aman").length;
 
-  document.getElementById("tpm-cnt-all").textContent = tpmCnt;
-  document.getElementById("task-cnt-all").textContent = taskCnt;
-  document.getElementById("task-cnt-wait").textContent = taskWaitCnt;
-  document.getElementById("task-cnt-rev").textContent = taskRevCnt;
+  const elTpm = document.getElementById("tpm-cnt-all");
+  if (elTpm) elTpm.textContent = tpmCnt;
+  const elTask = document.getElementById("task-cnt-all");
+  if (elTask) elTask.textContent = taskCnt;
+  const elTaskWait = document.getElementById("task-cnt-wait");
+  if (elTaskWait) elTaskWait.textContent = taskWaitCnt;
+  const elTaskRev = document.getElementById("task-cnt-rev");
+  if (elTaskRev) elTaskRev.textContent = taskRevCnt;
 
-  document.getElementById("cnt-stk-habis").textContent = habisCnt;
-  document.getElementById("cnt-stk-menipis").textContent = menipisCnt;
-  document.getElementById("cnt-stk-aman").textContent = amanCnt;
+  const elStkHabis = document.getElementById("cnt-stk-habis");
+  if (elStkHabis) elStkHabis.textContent = habisCnt;
+  const elStkMenipis = document.getElementById("cnt-stk-menipis");
+  if (elStkMenipis) elStkMenipis.textContent = menipisCnt;
+  const elStkAman = document.getElementById("cnt-stk-aman");
+  if (elStkAman) elStkAman.textContent = amanCnt;
 
   const notifBadge = document.getElementById("notification-count");
   if (notifBadge) notifBadge.textContent = taskWaitCnt + habisCnt;
@@ -912,6 +1574,7 @@ function updateDashboardCounts() {
 
 function renderDrawingTable() {
   const body = document.getElementById("drawing-table-body");
+  if (!body) return;
   const searchVal = (document.getElementById("search-drawing")?.value || "").toLowerCase();
 
   const filtered = MTM_DATA.drawings.filter(d => 
@@ -937,6 +1600,7 @@ function renderDrawingTable() {
 
 function renderJigTable() {
   const body = document.getElementById("jig-table-body");
+  if (!body) return;
   const searchVal = (document.getElementById("search-jig-table")?.value || "").toLowerCase();
 
   const filtered = MTM_DATA.jigs.filter(j => 
@@ -973,6 +1637,7 @@ function renderJigTable() {
 
 function renderTpmScheduleTable() {
   const body = document.getElementById("tpm-schedule-table-body");
+  if (!body) return;
   body.innerHTML = MTM_DATA.tpmSchedule.map(s => `
     <tr>
       <td>${s.no}</td>
@@ -991,6 +1656,7 @@ function renderTpmScheduleTable() {
 
 function renderApprovalQueue() {
   const container = document.getElementById("approval-queue-container");
+  if (!container) return;
   container.innerHTML = MTM_DATA.tasks.map(t => `
     <div class="approval-item-card">
       <div class="approval-item-info">
@@ -2421,6 +3087,11 @@ function advanceStreamTimeline() {
     }
   });
 
+  // Sinkronkan pembaruan candlestick & running trade Stockbit
+  if (typeof updateStockbitOnTick === "function") {
+    updateStockbitOnTick(now);
+  }
+
   // Update status MPC & Pilar Maintenance secara real-time
   updateMpcFromLiveSensors();
 
@@ -2495,7 +3166,7 @@ function setTempChartFilter(filterKey, btn) {
   dashTempFilter = filterKey;
   const group = document.getElementById("temp-chart-filter-group");
   if (group) {
-    group.querySelectorAll(".dash-tab").forEach(b => b.classList.remove("active"));
+    group.querySelectorAll(".dash-tab, .dash-tab-sm").forEach(b => b.classList.remove("active"));
     if (btn) btn.classList.add("active");
   }
   renderTemperatureChart();
@@ -2610,7 +3281,7 @@ function renderTemperatureChart(history, filter) {
   ctx.scale(dpr, dpr);
   ctx.clearRect(0, 0, width, height);
 
-  const pad = { top: 25, right: 35, bottom: 35, left: 45 };
+  const pad = { top: 20, right: 30, bottom: 26, left: 36 };
   const plotW = width - pad.left - pad.right;
   const plotH = height - pad.top - pad.bottom;
 
@@ -2760,7 +3431,7 @@ function renderVibrationChart(history) {
   ctx.scale(dpr, dpr);
   ctx.clearRect(0, 0, width, height);
 
-  const pad = { top: 25, right: 35, bottom: 35, left: 45 };
+  const pad = { top: 20, right: 30, bottom: 26, left: 36 };
   const plotW = width - pad.left - pad.right;
   const plotH = height - pad.top - pad.bottom;
 
@@ -2952,288 +3623,1101 @@ function renderDashboardMatrix(devices) {
 }
 
 // ========================================================
-// 10. REAL-TIME STREAMING MONITORING LINE CHARTS
+// 10. STOCKBIT & TRADINGVIEW PRO MONITORING TERMINAL
 // ========================================================
 
-let monSensorFilter = "all"; // 'all', 'temp', 'vib'
+const STOCK_SENSOR_METAS = {
+  "0": { id: "0", name: "Link Temperature", short: "Link Temp", unit: "°C", isVib: false, limit: 75, color: "#f59e0b" },
+  "3": { id: "3", name: "Right Eccentric Bush", short: "Right Bush", unit: "°C", isVib: false, limit: 75, color: "#2563eb" },
+  "4": { id: "4", name: "Left Eccentric Bush", short: "Left Bush", unit: "°C", isVib: false, limit: 75, color: "#06b6d4" },
+  "5": { id: "5", name: "Right Transmission Bearing", short: "Right Bearing", unit: "°C", isVib: false, limit: 75, color: "#10b981" },
+  "6": { id: "6", name: "Left Transmission Bearing", short: "Left Bearing", unit: "°C", isVib: false, limit: 75, color: "#ec4899" },
+  "1": { id: "1", name: "Vibration Sensor", short: "Vibration", unit: "in/s", isVib: true, limit: 0.08, color: "#8b5cf6" },
+};
 
-function setMonSensorFilter(filterKey, btn) {
-  monSensorFilter = filterKey;
-  const group = document.getElementById("mon-sensor-chart-filter");
-  if (group) {
-    group.querySelectorAll(".mon-pill-btn").forEach(b => b.classList.remove("active"));
+let stockActiveSensor = "0"; // "0", "3", "4", "5", "6", "1", "all"
+let stockTimeframe = "5s"; // "1s", "5s", "15s", "30s", "1m"
+let stockChartType = "candle"; // "candle", "line"
+let stockIndicators = {
+  ma7: true,
+  ma21: true,
+  limit: true
+};
+let stockActiveTool = "crosshair";
+let stockCrosshairPos = null;
+let stockCandlesMap = {}; // sensorId -> [ { time, open, high, low, close, volume } ]
+let stockRunningTrades = []; // [ { id, time, timeStr, sensorId, name, val, prevVal, delta, pct, dir, status, raw } ]
+let isRtPaused = false;
+let rtActiveFilter = "all"; // 'all', 'up', 'down', 'warn'
+let stockCandleStartTime = {}; // sensorId -> timestamp of current candle
+let stockPreviousVals = {}; // sensorId -> previous tick val
+let stockCanvasListenersAttached = false;
+let stockVisibleCount = 35;
+
+// Timeframe duration in milliseconds
+function getStockTfMs() {
+  switch (stockTimeframe) {
+    case "1s": return 1000;
+    case "5s": return 5000;
+    case "15s": return 15000;
+    case "30s": return 30000;
+    case "1m": return 60000;
+    default: return 5000;
+  }
+}
+
+// Inisialisasi awal lilin candlestick realistis (35 lilin sebelumnya)
+function initStockCandles() {
+  if (stockCandlesMap["0"] && stockCandlesMap["0"].length > 0) return;
+
+  const now = Date.now();
+  const tfMs = getStockTfMs();
+  const count = 35;
+
+  Object.keys(STOCK_SENSOR_METAS).forEach(sId => {
+    const meta = STOCK_SENSOR_METAS[sId];
+    stockCandlesMap[sId] = [];
+    let curVal = latestSensorValues[sId] != null ? latestSensorValues[sId] : (meta.isVib ? 0.045 : 42.0);
+
+    // Bangun mundur 35 candle
+    const tempCandles = [];
+    for (let i = count; i >= 1; i--) {
+      const cTime = now - i * tfMs;
+      const step = meta.isVib ? (Math.random() - 0.5) * 0.004 : (Math.random() - 0.5) * 0.45;
+      const open = meta.isVib ? Math.max(0.015, +(curVal - step).toFixed(3)) : +(curVal - step).toFixed(1);
+      const close = curVal;
+      const spread = meta.isVib ? Math.random() * 0.003 + 0.001 : Math.random() * 0.35 + 0.1;
+      const high = meta.isVib ? +(Math.max(open, close) + spread).toFixed(3) : +(Math.max(open, close) + spread).toFixed(1);
+      const low = meta.isVib ? Math.max(0.01, +(Math.min(open, close) - spread).toFixed(3)) : +(Math.min(open, close) - spread).toFixed(1);
+      const volume = Math.floor(Math.random() * 250 + 50);
+
+      tempCandles.push({
+        time: cTime,
+        open: open,
+        high: high,
+        low: low,
+        close: close,
+        volume: volume
+      });
+
+      // Jalan ke nilai berikutnya
+      const nextDrift = meta.isVib ? (Math.random() - 0.49) * 0.002 : (Math.random() - 0.49) * 0.25;
+      curVal = meta.isVib ? Math.max(0.015, +(curVal + nextDrift).toFixed(3)) : +(curVal + nextDrift).toFixed(1);
+    }
+
+    stockCandlesMap[sId] = tempCandles;
+    stockCandleStartTime[sId] = now;
+  });
+}
+
+// Detak setiap detik: membentuk candle baru / memperbarui candle berjalan dan mencatat running trade
+function updateStockbitOnTick(now) {
+  initStockCandles();
+
+  const tfMs = getStockTfMs();
+  const timeStr = new Date(now).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+
+  Object.keys(STOCK_SENSOR_METAS).forEach(sId => {
+    const meta = STOCK_SENSOR_METAS[sId];
+    const val = latestSensorValues[sId] != null ? latestSensorValues[sId] : (meta.isVib ? 0.045 : 40.0);
+    const prev = stockPreviousVals[sId] != null ? stockPreviousVals[sId] : val;
+    stockPreviousVals[sId] = val;
+
+    const delta = meta.isVib ? +(val - prev).toFixed(3) : +(val - prev).toFixed(2);
+    const pct = prev > 0 ? +((delta / prev) * 100).toFixed(2) : 0;
+    const dir = delta > 0 ? "up" : delta < 0 ? "down" : "flat";
+    const status = val > meta.limit ? "critical" : val > (meta.limit * 0.9) ? "warning" : "normal";
+
+    // 1. Catat ke riwayat perubahan (Running Trade)
+    if (!isRtPaused) {
+      stockRunningTrades.unshift({
+        id: `${now}-${sId}`,
+        time: now,
+        timeStr: timeStr,
+        sensorId: sId,
+        name: meta.short,
+        unit: meta.unit,
+        val: val,
+        prevVal: prev,
+        delta: delta,
+        pct: pct,
+        dir: dir,
+        status: status,
+        isVib: meta.isVib,
+        raw: meta.isVib ? `{"p":${val}}` : `{"t":${val}}`,
+        isNew: true
+      });
+
+      if (stockRunningTrades.length > 80) {
+        stockRunningTrades.pop();
+      }
+    }
+
+    // 2. Perbarui candlestick aktif
+    const candles = stockCandlesMap[sId] || [];
+    const lastStart = stockCandleStartTime[sId] || (now - tfMs);
+
+    if (now - lastStart >= tfMs || candles.length === 0) {
+      // Tutup candle lama & buka candle baru
+      stockCandleStartTime[sId] = now;
+      candles.push({
+        time: now,
+        open: val,
+        high: val,
+        low: val,
+        close: val,
+        volume: Math.floor(Math.random() * 80 + 20)
+      });
+      if (candles.length > 50) candles.shift();
+    } else {
+      // Update candle berjalan saat ini
+      const activeC = candles[candles.length - 1];
+      activeC.high = meta.isVib ? Math.max(activeC.high, val) : +(Math.max(activeC.high, val)).toFixed(1);
+      activeC.low = meta.isVib ? Math.min(activeC.low, val) : +(Math.min(activeC.low, val)).toFixed(1);
+      activeC.close = val;
+      activeC.volume += Math.floor(Math.random() * 15 + 5);
+    }
+  });
+
+  // 3. Update DOM Ticker, Watchlist & Bandar Detector
+  updateStockTerminalHeader();
+  updateStockWatchlistBar();
+  updateBandarDetectorDOM();
+
+  // 4. Render tabel Running Trade jika view monitoring aktif
+  renderStockRunningTrades();
+}
+
+// Update Header Ticker & OHLC Bar
+function updateStockTerminalHeader() {
+  const sId = stockActiveSensor === "all" ? "0" : stockActiveSensor;
+  const meta = STOCK_SENSOR_METAS[sId] || STOCK_SENSOR_METAS["0"];
+  const val = latestSensorValues[sId] != null ? latestSensorValues[sId] : 0;
+  const candles = stockCandlesMap[sId] || [];
+  const curCandle = candles[candles.length - 1] || { open: val, high: val, low: val, close: val, volume: 100 };
+  const firstCandle = candles[0] || curCandle;
+
+  const totalDelta = meta.isVib ? +(curCandle.close - firstCandle.open).toFixed(3) : +(curCandle.close - firstCandle.open).toFixed(2);
+  const totalPct = firstCandle.open > 0 ? +((totalDelta / firstCandle.open) * 100).toFixed(2) : 0;
+  const isUp = totalDelta >= 0;
+
+  setText("stock-active-name", stockActiveSensor === "all" ? "Semua Sensor Mesin (Multi-Series)" : `${meta.name} (#${meta.id})`);
+  setText("stock-live-price", meta.isVib ? fmtNum(curCandle.close, 3) : fmtNum(curCandle.close, 2));
+  setText("stock-live-unit", meta.unit);
+
+  const tag = document.getElementById("stock-change-tag");
+  if (tag) {
+    tag.className = `stock-change-tag ${isUp ? "up" : "down"}`;
+    setText("stock-change-symbol", isUp ? "▲" : "▼");
+    setText("stock-change-val", `${isUp ? "+" : ""}${totalDelta}`);
+    setText("stock-change-pct", `(${isUp ? "+" : ""}${totalPct}%)`);
+  }
+
+  setText("stock-stat-open", meta.isVib ? fmtNum(curCandle.open, 3) : fmtNum(curCandle.open, 2));
+  setText("stock-stat-high", meta.isVib ? fmtNum(curCandle.high, 3) : fmtNum(curCandle.high, 2));
+  setText("stock-stat-low", meta.isVib ? fmtNum(curCandle.low, 3) : fmtNum(curCandle.low, 2));
+  setText("stock-stat-close", meta.isVib ? fmtNum(curCandle.close, 3) : fmtNum(curCandle.close, 2));
+  setText("stock-stat-vol", `${curCandle.volume.toLocaleString("id-ID")} pkt`);
+}
+
+// Update Watchlist Chip Bar
+function updateStockWatchlistBar() {
+  Object.keys(STOCK_SENSOR_METAS).forEach(sId => {
+    const meta = STOCK_SENSOR_METAS[sId];
+    const val = latestSensorValues[sId];
+    const prev = stockPreviousVals[sId] != null ? stockPreviousVals[sId] : val;
+    const isUp = (val || 0) >= (prev || 0);
+
+    const valEl = document.getElementById(`watch-val-${sId}`);
+    if (valEl && val != null) {
+      valEl.textContent = meta.isVib ? `${fmtNum(val, 3)} in/s` : `${fmtNum(val, 1)} °C`;
+    }
+
+    const dirEl = document.getElementById(`watch-dir-${sId}`);
+    if (dirEl) {
+      dirEl.textContent = isUp ? "▲" : "▼";
+      dirEl.className = `watch-dir ${isUp ? "up" : "down"}`;
+    }
+
+    const chip = document.querySelector(`.stock-watch-chip[data-id="${sId}"], .sb-watch-chip[data-id="${sId}"], .mon-sensor-chip[data-id="${sId}"]`);
+    if (chip) {
+      if (stockActiveSensor === sId) chip.classList.add("active");
+      else chip.classList.remove("active");
+    }
+  });
+}
+
+// Menghitung Simple Moving Average (SMA)
+function calcMovingAverage(candles, period) {
+  const result = [];
+  for (let i = 0; i < candles.length; i++) {
+    if (i < period - 1) {
+      result.push(null);
+    } else {
+      let sum = 0;
+      for (let j = 0; j < period; j++) {
+        sum += candles[i - j].close;
+      }
+      result.push(sum / period);
+    }
+  }
+  return result;
+}
+
+// RENDER UTAMA: Stockbit / TradingView Canvas Candlestick & Line Chart
+function renderMonitoringLiveCharts() {
+  initStockCandles();
+
+  const monView = document.getElementById("view-monitoring");
+  if (!monView || (monView.style.display === "none" && activeView !== "monitoring")) return;
+
+  renderStockMainChart();
+  renderStockBandarValueChart();
+  renderStockBandarVolumeChart();
+}
+
+// 1. PANE UTAMA: CANDLESTICK CHART (LATAR BELAKANG PUTIH BERSIH STOCKBIT PRO)
+function renderStockMainChart() {
+  const canvas = document.getElementById("canvas-mon-live-chart");
+  if (!canvas) return;
+
+  attachStockCanvasListeners(canvas);
+
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const w = Math.max(400, rect.width || canvas.parentElement?.clientWidth || 800);
+  const h = Math.max(300, rect.height || 340);
+
+  if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
+    canvas.width = Math.floor(w * dpr);
+    canvas.height = Math.floor(h * dpr);
+  }
+
+  const ctx = canvas.getContext("2d");
+  ctx.save();
+  ctx.scale(dpr, dpr);
+
+  // 1. Bersihkan Latar Belakang PUTIH BERSIH
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, w, h);
+
+  const pad = { top: 22, right: 68, bottom: 26, left: 14 };
+  const plotW = w - pad.left - pad.right;
+  const plotH = h - pad.top - pad.bottom;
+
+  const sId = stockActiveSensor === "all" ? "0" : stockActiveSensor;
+  const meta = STOCK_SENSOR_METAS[sId] || STOCK_SENSOR_METAS["0"];
+  const isVib = meta.isVib;
+  const allCandles = stockCandlesMap[sId] || [];
+
+  if (allCandles.length === 0) {
+    ctx.restore();
+    return;
+  }
+
+  // Tampilkan sejumlah lilin sesuai tingkat zoom (default 35 lilin)
+  const candles = allCandles.slice(-stockVisibleCount);
+
+  // 2. Tentukan Rentang Skala Harga Y
+  let minPrice = Infinity;
+  let maxPrice = -Infinity;
+
+  candles.forEach(c => {
+    if (c.low < minPrice) minPrice = c.low;
+    if (c.high > maxPrice) maxPrice = c.high;
+  });
+
+  if (stockIndicators.limit && meta.limit) {
+    if (meta.limit > maxPrice) maxPrice = meta.limit * 1.05;
+  }
+
+  const priceMargin = (maxPrice - minPrice) * 0.12 || (isVib ? 0.008 : 1.5);
+  minPrice = Math.max(0, minPrice - priceMargin);
+  maxPrice = maxPrice + priceMargin;
+  const priceSpan = maxPrice - minPrice || 1;
+
+  // 3. Grid Horizontal Halus & Label Sumbu Y Kanan (Warna Putih & Biru Bersih)
+  ctx.strokeStyle = "rgba(37, 99, 235, 0.08)";
+  ctx.lineWidth = 1;
+  ctx.fillStyle = "#475569";
+  ctx.font = "10px 'JetBrains Mono', monospace";
+  ctx.textAlign = "left";
+
+  const numYLines = 6;
+  for (let i = 0; i <= numYLines; i++) {
+    const yVal = minPrice + (i / numYLines) * priceSpan;
+    const yPos = pad.top + plotH - (i / numYLines) * plotH;
+
+    ctx.beginPath();
+    ctx.moveTo(pad.left, yPos);
+    ctx.lineTo(pad.left + plotW, yPos);
+    ctx.stroke();
+
+    const priceText = isVib ? `${fmtNum(yVal, 3)}` : `${fmtNum(yVal, 1)}°`;
+    ctx.fillText(priceText, pad.left + plotW + 6, yPos + 3.5);
+  }
+
+  // Pembatas Garis Vertikal Sumbu Kanan (Biru Halus)
+  ctx.beginPath();
+  ctx.moveTo(pad.left + plotW, pad.top);
+  ctx.lineTo(pad.left + plotW, pad.top + plotH);
+  ctx.strokeStyle = "#dbeafe";
+  ctx.stroke();
+
+  // 4. Garis Limit Threshold Merah Putus-putus
+  if (stockIndicators.limit && meta.limit >= minPrice && meta.limit <= maxPrice) {
+    const yLimit = pad.top + plotH - ((meta.limit - minPrice) / priceSpan) * plotH;
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = "#ef4444";
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, yLimit);
+    ctx.lineTo(pad.left + plotW, yLimit);
+    ctx.stroke();
+
+    // Badge Limit di Sumbu Kanan
+    ctx.fillStyle = "#ef4444";
+    ctx.fillRect(pad.left + plotW + 2, yLimit - 8, pad.right - 4, 16);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 9px 'JetBrains Mono', monospace";
+    ctx.textAlign = "left";
+    ctx.fillText(isVib ? "0.08" : "75.0°", pad.left + plotW + 6, yLimit + 3.5);
+    ctx.restore();
+  }
+
+  // 5. Perhitungan Koordinat Lilin
+  const candleCount = candles.length;
+  const slotW = plotW / Math.max(1, candleCount);
+  const barW = Math.max(3, Math.min(18, slotW * 0.72));
+
+  // Hitung Moving Averages
+  const ma7Vals = stockIndicators.ma7 ? calcMovingAverage(candles, 7) : [];
+  const ma21Vals = stockIndicators.ma21 ? calcMovingAverage(candles, 21) : [];
+
+  // 6. Gambar Candlestick / Line Chart
+  if (stockChartType === "candle") {
+    candles.forEach((c, i) => {
+      const isGreen = c.close >= c.open;
+      const color = isGreen ? "#16a34a" : "#dc2626";
+
+      const xCenter = pad.left + (i + 0.5) * slotW;
+      const yOpen = pad.top + plotH - ((c.open - minPrice) / priceSpan) * plotH;
+      const yClose = pad.top + plotH - ((c.close - minPrice) / priceSpan) * plotH;
+      const yHigh = pad.top + plotH - ((c.high - minPrice) / priceSpan) * plotH;
+      const yLow = pad.top + plotH - ((c.low - minPrice) / priceSpan) * plotH;
+
+      // Sumbu / Ekor Lilin (Wick)
+      ctx.beginPath();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.3;
+      ctx.moveTo(xCenter, yHigh);
+      ctx.lineTo(xCenter, yLow);
+      ctx.stroke();
+
+      // Badan Lilin (Body)
+      const bodyTop = Math.min(yOpen, yClose);
+      const bodyHeight = Math.max(2, Math.abs(yClose - yOpen));
+
+      ctx.fillStyle = color;
+      ctx.fillRect(xCenter - barW / 2, bodyTop, barW, bodyHeight);
+    });
+  } else {
+    // Mode Line Chart dengan Soft Gradient
+    const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + plotH);
+    grad.addColorStop(0, (meta.color || "#2563eb") + "30");
+    grad.addColorStop(1, (meta.color || "#2563eb") + "02");
+
+    ctx.beginPath();
+    candles.forEach((c, i) => {
+      const x = pad.left + (i + 0.5) * slotW;
+      const y = pad.top + plotH - ((c.close - minPrice) / priceSpan) * plotH;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.lineTo(pad.left + (candles.length - 0.5) * slotW, pad.top + plotH);
+    ctx.lineTo(pad.left + 0.5 * slotW, pad.top + plotH);
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Garis Neon Halus
+    ctx.beginPath();
+    ctx.strokeStyle = meta.color || "#2563eb";
+    ctx.lineWidth = 2.2;
+    ctx.lineJoin = "round";
+    candles.forEach((c, i) => {
+      const x = pad.left + (i + 0.5) * slotW;
+      const y = pad.top + plotH - ((c.close - minPrice) / priceSpan) * plotH;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  }
+
+  // 7. Garis Indikator MA(7) Amber & MA(21) Biru
+  if (stockIndicators.ma7) {
+    ctx.beginPath();
+    ctx.strokeStyle = "#f59e0b";
+    ctx.lineWidth = 1.7;
+    let maStarted = false;
+    ma7Vals.forEach((v, i) => {
+      if (v == null) return;
+      const x = pad.left + (i + 0.5) * slotW;
+      const y = pad.top + plotH - ((v - minPrice) / priceSpan) * plotH;
+      if (!maStarted) { ctx.moveTo(x, y); maStarted = true; }
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  }
+
+  if (stockIndicators.ma21) {
+    ctx.beginPath();
+    ctx.strokeStyle = "#2563eb";
+    ctx.lineWidth = 1.7;
+    let maStarted = false;
+    ma21Vals.forEach((v, i) => {
+      if (v == null) return;
+      const x = pad.left + (i + 0.5) * slotW;
+      const y = pad.top + plotH - ((v - minPrice) / priceSpan) * plotH;
+      if (!maStarted) { ctx.moveTo(x, y); maStarted = true; }
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  }
+
+  // 8. Dynamic Price Beacon di Lilin Terakhir & Badge Harga Terkini Sumbu Kanan
+  const lastC = candles[candles.length - 1];
+  if (lastC) {
+    const isGreen = lastC.close >= lastC.open;
+    const tagColor = isGreen ? "#16a34a" : "#dc2626";
+    const lastX = pad.left + (candles.length - 0.5) * slotW;
+    const lastY = pad.top + plotH - ((lastC.close - minPrice) / priceSpan) * plotH;
+
+    // Garis panduan horizontal putus-putus ke sumbu harga
+    ctx.save();
+    ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = tagColor;
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(pad.left + plotW, lastY);
+    ctx.stroke();
+    ctx.restore();
+
+    // Beacon denyut live di ujung grafik
+    const pulseR = 4 + Math.sin(Date.now() / 200) * 2;
+    ctx.beginPath();
+    ctx.arc(lastX, lastY, pulseR + 3, 0, Math.PI * 2);
+    ctx.fillStyle = tagColor + "28";
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(lastX, lastY, 3, 0, Math.PI * 2);
+    ctx.fillStyle = tagColor;
+    ctx.fill();
+
+    // Price Badge pada sumbu Y kanan
+    ctx.fillStyle = tagColor;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(pad.left + plotW + 2, lastY - 9, pad.right - 4, 18, 4);
+    else ctx.fillRect(pad.left + plotW + 2, lastY - 9, pad.right - 4, 18);
+    ctx.fill();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 10px 'JetBrains Mono', monospace";
+    ctx.textAlign = "left";
+    const lastPriceStr = isVib ? fmtNum(lastC.close, 3) : fmtNum(lastC.close, 2);
+    ctx.fillText(lastPriceStr, pad.left + plotW + 6, lastY + 3.5);
+  }
+
+  // 9. Label Sumbu X (Timeline Waktu)
+  ctx.fillStyle = "#64748b";
+  ctx.font = "9px 'JetBrains Mono', monospace";
+  ctx.textAlign = "center";
+  const stepLabel = Math.max(1, Math.floor(candleCount / 5));
+  for (let i = 0; i < candleCount; i += stepLabel) {
+    const c = candles[i];
+    const x = pad.left + (i + 0.5) * slotW;
+    const d = new Date(c.time);
+    const timeLbl = d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    ctx.fillText(timeLbl, x, h - 8);
+  }
+
+  // 10. Interactive Crosshair HUD saat mouse diarahkan ke grafik
+  if (stockCrosshairPos && stockCrosshairPos.x >= pad.left && stockCrosshairPos.x <= pad.left + plotW && stockCrosshairPos.y >= pad.top && stockCrosshairPos.y <= pad.top + plotH) {
+    const mx = stockCrosshairPos.x;
+    const my = stockCrosshairPos.y;
+
+    ctx.save();
+    ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = "rgba(37, 99, 235, 0.4)";
+    ctx.lineWidth = 1;
+
+    // Vertikal
+    ctx.beginPath();
+    ctx.moveTo(mx, pad.top);
+    ctx.lineTo(mx, pad.top + plotH);
+    ctx.stroke();
+
+    // Horizontal
+    ctx.beginPath();
+    ctx.moveTo(pad.left, my);
+    ctx.lineTo(pad.left + plotW, my);
+    ctx.stroke();
+
+    // Badge harga pada posisi kursor Y (Biru Astra MTM)
+    const hoverPrice = minPrice + ((pad.top + plotH - my) / plotH) * priceSpan;
+    ctx.fillStyle = "#2563eb";
+    if (ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(pad.left + plotW + 2, my - 8, pad.right - 4, 16, 3);
+      ctx.fill();
+    } else {
+      ctx.fillRect(pad.left + plotW + 2, my - 8, pad.right - 4, 16);
+    }
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 9px 'JetBrains Mono', monospace";
+    ctx.textAlign = "left";
+    ctx.fillText(isVib ? fmtNum(hoverPrice, 3) : fmtNum(hoverPrice, 2), pad.left + plotW + 6, my + 3.5);
+
+    // Cari candle terdekat dengan kursor X
+    const candleIdx = Math.max(0, Math.min(candleCount - 1, Math.floor((mx - pad.left) / slotW)));
+    const hoveredCandle = candles[candleIdx];
+
+    if (hoveredCandle) {
+      const hTime = new Date(hoveredCandle.time).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      const tagW = 60;
+      ctx.fillStyle = "#2563eb";
+      if (ctx.roundRect) {
+        ctx.beginPath();
+        ctx.roundRect(mx - tagW / 2, h - 20, tagW, 16, 3);
+        ctx.fill();
+      } else {
+        ctx.fillRect(mx - tagW / 2, h - 20, tagW, 16);
+      }
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 9px 'JetBrains Mono', monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(hTime, mx, h - 8);
+
+      const hud = document.getElementById("stock-crosshair-hud");
+      if (hud) {
+        hud.style.display = "flex";
+        setText("hud-time", hTime);
+        setText("hud-open", isVib ? fmtNum(hoveredCandle.open, 3) : fmtNum(hoveredCandle.open, 2));
+        setText("hud-high", isVib ? fmtNum(hoveredCandle.high, 3) : fmtNum(hoveredCandle.high, 2));
+        setText("hud-low", isVib ? fmtNum(hoveredCandle.low, 3) : fmtNum(hoveredCandle.low, 2));
+        setText("hud-close", isVib ? fmtNum(hoveredCandle.close, 3) : fmtNum(hoveredCandle.close, 2));
+
+        const ma7v = ma7Vals[candleIdx];
+        const ma21v = ma21Vals[candleIdx];
+        setText("hud-ma7", ma7v != null ? (isVib ? fmtNum(ma7v, 3) : fmtNum(ma7v, 2)) : "--");
+        setText("hud-ma21", ma21v != null ? (isVib ? fmtNum(ma21v, 3) : fmtNum(ma21v, 2)) : "--");
+      }
+    }
+
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+// 2. SUB-PANE 1: BANDAR VALUE (LATAR BELAKANG PUTIH BERSIH)
+function renderStockBandarValueChart() {
+  const canvas = document.getElementById("canvas-mon-bandar-value");
+  if (!canvas) return;
+
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const w = Math.max(400, rect.width || canvas.parentElement?.clientWidth || 800);
+  const h = Math.max(90, rect.height || 105);
+
+  if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
+    canvas.width = Math.floor(w * dpr);
+    canvas.height = Math.floor(h * dpr);
+  }
+
+  const ctx = canvas.getContext("2d");
+  ctx.save();
+  ctx.scale(dpr, dpr);
+
+  // Latar Belakang Putih Bersih
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, w, h);
+
+  const pad = { top: 10, right: 68, bottom: 14, left: 14 };
+  const plotW = w - pad.left - pad.right;
+  const plotH = h - pad.top - pad.bottom;
+
+  const sId = stockActiveSensor === "all" ? "0" : stockActiveSensor;
+  const allCandles = stockCandlesMap[sId] || [];
+  if (allCandles.length === 0) { ctx.restore(); return; }
+
+  const candles = allCandles.slice(-stockVisibleCount);
+
+  // Hitung akumulasi Bandar Value & moving average
+  let runningFlow = 0;
+  const flowVals = [];
+  candles.forEach(c => {
+    const delta = c.close - c.open;
+    const vol = c.volume || 100;
+    runningFlow += delta * vol;
+    flowVals.push(runningFlow);
+  });
+
+  // Flow MA (period 5)
+  const flowMa = [];
+  for (let i = 0; i < flowVals.length; i++) {
+    if (i < 4) flowMa.push(flowVals[i]);
+    else {
+      let sum = 0;
+      for (let j = 0; j < 5; j++) sum += flowVals[i - j];
+      flowMa.push(sum / 5);
+    }
+  }
+
+  let minVal = Math.min(0, ...flowVals);
+  let maxVal = Math.max(0, ...flowVals);
+  const span = Math.max(1, maxVal - minVal) * 1.15;
+  minVal -= span * 0.05;
+  maxVal += span * 0.05;
+  const valSpan = maxVal - minVal || 1;
+
+  // Garis 0 Baseline
+  const y0 = pad.top + plotH - ((0 - minVal) / valSpan) * plotH;
+  ctx.save();
+  ctx.setLineDash([3, 3]);
+  ctx.strokeStyle = "rgba(148, 163, 184, 0.6)";
+  ctx.beginPath();
+  ctx.moveTo(pad.left, y0);
+  ctx.lineTo(pad.left + plotW, y0);
+  ctx.stroke();
+  ctx.restore();
+
+  // Label 0 pada sumbu Y kanan
+  ctx.fillStyle = "#94a3b8";
+  ctx.font = "9px 'JetBrains Mono', monospace";
+  ctx.fillText("0.0", pad.left + plotW + 6, y0 + 3);
+
+  // Pembatas Vertikal Sumbu Kanan
+  ctx.beginPath();
+  ctx.moveTo(pad.left + plotW, pad.top);
+  ctx.lineTo(pad.left + plotW, pad.top + plotH);
+  ctx.strokeStyle = "#e2e8f0";
+  ctx.stroke();
+
+  const slotW = plotW / Math.max(1, candles.length);
+
+  // Shaded Area Flow (Ungu Muda Lembut Transparan)
+  const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + plotH);
+  grad.addColorStop(0, "rgba(139, 92, 246, 0.20)");
+  grad.addColorStop(1, "rgba(139, 92, 246, 0.01)");
+
+  ctx.beginPath();
+  flowVals.forEach((v, i) => {
+    const x = pad.left + (i + 0.5) * slotW;
+    const y = pad.top + plotH - ((v - minVal) / valSpan) * plotH;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.lineTo(pad.left + (flowVals.length - 0.5) * slotW, y0);
+  ctx.lineTo(pad.left + 0.5 * slotW, y0);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Garis Utama Bandar Value (Ungu #8b5cf6)
+  ctx.beginPath();
+  ctx.strokeStyle = "#8b5cf6";
+  ctx.lineWidth = 1.9;
+  flowVals.forEach((v, i) => {
+    const x = pad.left + (i + 0.5) * slotW;
+    const y = pad.top + plotH - ((v - minVal) / valSpan) * plotH;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Garis Moving Average Flow (Oranye #f59e0b)
+  ctx.beginPath();
+  ctx.strokeStyle = "#f59e0b";
+  ctx.lineWidth = 1.3;
+  flowMa.forEach((v, i) => {
+    const x = pad.left + (i + 0.5) * slotW;
+    const y = pad.top + plotH - ((v - minVal) / valSpan) * plotH;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Nilai Akhir pada sumbu kanan
+  const lastFlow = flowVals[flowVals.length - 1] || 0;
+  const lastY = pad.top + plotH - ((lastFlow - minVal) / valSpan) * plotH;
+  ctx.fillStyle = "#8b5cf6";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(pad.left + plotW + 2, lastY - 8, pad.right - 4, 16, 3);
+  else ctx.fillRect(pad.left + plotW + 2, lastY - 8, pad.right - 4, 16);
+  ctx.fill();
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 9px 'JetBrains Mono', monospace";
+  const flowStr = (lastFlow >= 0 ? "+" : "") + (Math.abs(lastFlow) > 1000 ? `${(lastFlow / 1000).toFixed(1)}K` : lastFlow.toFixed(1));
+  ctx.fillText(flowStr, pad.left + plotW + 5, lastY + 3.5);
+
+  ctx.restore();
+}
+
+// 3. SUB-PANE 2: BANDAR VOLUME (LATAR BELAKANG PUTIH BERSIH)
+function renderStockBandarVolumeChart() {
+  const canvas = document.getElementById("canvas-mon-bandar-volume");
+  if (!canvas) return;
+
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const w = Math.max(400, rect.width || canvas.parentElement?.clientWidth || 800);
+  const h = Math.max(80, rect.height || 90);
+
+  if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
+    canvas.width = Math.floor(w * dpr);
+    canvas.height = Math.floor(h * dpr);
+  }
+
+  const ctx = canvas.getContext("2d");
+  ctx.save();
+  ctx.scale(dpr, dpr);
+
+  // Latar Belakang Putih Bersih
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, w, h);
+
+  const pad = { top: 8, right: 68, bottom: 18, left: 14 };
+  const plotW = w - pad.left - pad.right;
+  const plotH = h - pad.top - pad.bottom;
+
+  const sId = stockActiveSensor === "all" ? "0" : stockActiveSensor;
+  const allCandles = stockCandlesMap[sId] || [];
+  if (allCandles.length === 0) { ctx.restore(); return; }
+
+  const candles = allCandles.slice(-stockVisibleCount);
+
+  let maxVol = 10;
+  candles.forEach(c => {
+    const v = c.volume || 100;
+    if (v > maxVol) maxVol = v;
+  });
+  maxVol = maxVol * 1.1;
+
+  const yCenter = pad.top + plotH / 2;
+
+  // Garis 0 Baseline di tengah
+  ctx.strokeStyle = "rgba(148, 163, 184, 0.5)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.left, yCenter);
+  ctx.lineTo(pad.left + plotW, yCenter);
+  ctx.stroke();
+
+  // Pembatas Vertikal Sumbu Kanan
+  ctx.beginPath();
+  ctx.moveTo(pad.left + plotW, pad.top);
+  ctx.lineTo(pad.left + plotW, pad.top + plotH);
+  ctx.strokeStyle = "#e2e8f0";
+  ctx.stroke();
+
+  // Label Sumbu Y Kanan
+  ctx.fillStyle = "#64748b";
+  ctx.font = "8px 'JetBrains Mono', monospace";
+  ctx.fillText(`+${Math.round(maxVol)}`, pad.left + plotW + 6, pad.top + 8);
+  ctx.fillText("0", pad.left + plotW + 6, yCenter + 3);
+  ctx.fillText(`-${Math.round(maxVol)}`, pad.left + plotW + 6, pad.top + plotH - 2);
+
+  const slotW = plotW / Math.max(1, candles.length);
+  const barW = Math.max(2, Math.min(14, slotW * 0.65));
+
+  // Gambar Batang Histogram Volume (Hijau bila naik, Merah bila turun)
+  candles.forEach((c, i) => {
+    const delta = c.close - c.open;
+    const isUp = delta >= 0;
+    const vol = c.volume || 100;
+    const barHeight = Math.max(2, (vol / maxVol) * (plotH / 2));
+    const xCenter = pad.left + (i + 0.5) * slotW;
+
+    ctx.fillStyle = isUp ? "#16a34a" : "#dc2626";
+    if (isUp) {
+      ctx.fillRect(xCenter - barW / 2, yCenter - barHeight, barW, barHeight);
+    } else {
+      ctx.fillRect(xCenter - barW / 2, yCenter, barW, barHeight);
+    }
+  });
+
+  // Label Waktu Sumbu X Bawah
+  ctx.fillStyle = "#64748b";
+  ctx.font = "8px 'JetBrains Mono', monospace";
+  ctx.textAlign = "center";
+  const stepLabel = Math.max(1, Math.floor(candles.length / 5));
+  for (let i = 0; i < candles.length; i += stepLabel) {
+    const c = candles[i];
+    const x = pad.left + (i + 0.5) * slotW;
+    const d = new Date(c.time);
+    const timeLbl = d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+    ctx.fillText(timeLbl, x, h - 5);
+  }
+
+  ctx.restore();
+}
+
+// Zoom Grafik Stockbit [-] [+]
+function zoomStockChart(dir) {
+  if (dir > 0) {
+    stockVisibleCount = Math.max(15, stockVisibleCount - 5);
+  } else {
+    stockVisibleCount = Math.min(65, stockVisibleCount + 5);
+  }
+  renderMonitoringLiveCharts();
+}
+
+// Update Bandar Detector DOM Values
+function updateBandarDetectorDOM() {
+  const sId = stockActiveSensor === "all" ? "0" : stockActiveSensor;
+  const val = latestSensorValues[sId] || 40.0;
+  const candles = stockCandlesMap[sId] || [];
+  const totalVol = candles.reduce((acc, c) => acc + (c.volume || 100), 0);
+  
+  const top1Vol = Math.round(totalVol * 0.18);
+  const top3Vol = Math.round(totalVol * 0.46);
+  const top5Vol = Math.round(totalVol * 0.72);
+  const avgVol = Math.round(totalVol * 0.52);
+
+  const netVol = Math.round(candles.reduce((acc, c) => acc + ((c.close >= c.open ? 1 : -1) * (c.volume || 100)), 0));
+  const netValB = Math.abs((netVol * (val || 40)) / 100).toFixed(1);
+  const avgPrice = Math.round((val || 40) * 98);
+
+  setText("det-vol-top1", (top1Vol * 15).toLocaleString("id-ID"));
+  setText("det-rp-top1", (top1Vol * 0.05).toFixed(1));
+  setText("det-vol-top3", (top3Vol * 15).toLocaleString("id-ID"));
+  setText("det-rp-top3", (top3Vol * 0.05).toFixed(1));
+  setText("det-vol-top5", (top5Vol * 15).toLocaleString("id-ID"));
+  setText("det-rp-top5", (top5Vol * 0.05).toFixed(1));
+  setText("det-vol-avg", (avgVol * 15).toLocaleString("id-ID"));
+  setText("det-rp-avg", (avgVol * 0.05).toFixed(1));
+
+  const buyerCount = 40 + Math.floor((Math.sin(Date.now() / 8000) + 1) * 6);
+  const sellerCount = 55 + Math.floor((Math.cos(Date.now() / 9000) + 1) * 5);
+  setText("det-buyer-count", buyerCount);
+  setText("det-seller-count", sellerCount);
+  setText("det-diff-count", buyerCount - sellerCount);
+
+  setText("det-net-vol", (Math.abs(netVol) * 220).toLocaleString("id-ID"));
+  setText("det-net-val", `${netValB} B`);
+  setText("det-avg-val", avgPrice.toLocaleString("id-ID"));
+}
+
+// Pasang Listener Mouse Interaktif
+function attachStockCanvasListeners(canvas) {
+  if (stockCanvasListenersAttached) return;
+
+  canvas.addEventListener("mousemove", (e) => {
+    const rect = canvas.getBoundingClientRect();
+    stockCrosshairPos = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+    renderMonitoringLiveCharts();
+  });
+
+  canvas.addEventListener("mouseleave", () => {
+    stockCrosshairPos = null;
+    const hud = document.getElementById("stock-crosshair-hud");
+    if (hud) hud.style.display = "none";
+    renderMonitoringLiveCharts();
+  });
+
+  stockCanvasListenersAttached = true;
+}
+
+// 4. RENDER RIWAYAT PERUBAHAN TELEMETRI (RUNNING TRADE LOG)
+function renderStockRunningTrades() {
+  const tbody = document.getElementById("stock-running-trade-body");
+  if (!tbody) return;
+
+  const searchInput = document.getElementById("rt-search-input");
+  const query = searchInput ? searchInput.value.trim().toLowerCase() : "";
+
+  const filtered = stockRunningTrades.filter(item => {
+    // 1. Filter pill
+    if (rtActiveFilter === "up" && item.dir !== "up") return false;
+    if (rtActiveFilter === "down" && item.dir !== "down") return false;
+    if (rtActiveFilter === "warn" && item.status === "normal") return false;
+
+    // 2. Query pencarian
+    if (query) {
+      const matchText = `${item.sensorId} ${item.name} ${item.val} ${item.delta} ${item.status}`.toLowerCase();
+      if (!matchText.includes(query)) return false;
+    }
+    return true;
+  });
+
+  // Update badge counter
+  setText("rt-count-badge", `${filtered.length} Data`);
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="mon-empty-state">Tidak ada data telemetri yang cocok dengan filter "${rtActiveFilter}".</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.slice(0, 50).map(t => {
+    const isUp = t.dir === "up";
+    const isDown = t.dir === "down";
+    const flashClass = t.isNew ? (isUp ? "rt-row-flash-up" : isDown ? "rt-row-flash-down" : "") : "";
+    t.isNew = false; // reset setelah satu render
+
+    const valFormatted = t.isVib ? `${fmtNum(t.val, 3)} ${t.unit}` : `${fmtNum(t.val, 2)} ${t.unit}`;
+    const deltaFormatted = t.delta > 0 ? `▲ +${t.delta}` : t.delta < 0 ? `▼ ${t.delta}` : `― 0.00`;
+    const pctFormatted = t.pct > 0 ? `+${t.pct}%` : `${t.pct}%`;
+
+    const statusPill = t.status === "critical" 
+      ? `<span class="rt-status-pill critical">CRITICAL</span>` 
+      : t.status === "warning" 
+      ? `<span class="rt-status-pill warning">WARNING</span>` 
+      : `<span class="rt-status-pill normal">NORMAL</span>`;
+
+    const momentumTag = isUp 
+      ? `<span class="rt-spark-dir up">▲ Naik</span>` 
+      : isDown 
+      ? `<span class="rt-spark-dir down">▼ Turun</span>` 
+      : `<span class="rt-spark-dir flat">― Stabil</span>`;
+
+    return `
+      <tr class="${flashClass}">
+        <td class="rt-col-time">${t.timeStr}</td>
+        <td>
+          <div class="rt-col-sensor">
+            <span class="rt-sensor-chip ${t.isVib ? "vib" : ""}">#${t.sensorId}</span>
+            <span class="rt-sensor-title">${t.name}</span>
+          </div>
+        </td>
+        <td class="rt-col-val ${isUp ? "up" : isDown ? "down" : ""}" style="text-align: right;">${valFormatted}</td>
+        <td class="rt-col-delta ${isUp ? "up" : isDown ? "down" : "eq"}" style="text-align: right;">${deltaFormatted}</td>
+        <td class="rt-col-delta ${isUp ? "up" : isDown ? "down" : "eq"}" style="text-align: right;">${pctFormatted}</td>
+        <td style="text-align: center;">${statusPill}</td>
+        <td style="text-align: center;">${momentumTag}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+// Handler Ganti Sensor Aktif
+function changeStockSensor(sensorId) {
+  stockActiveSensor = sensorId;
+
+  // Sinkronkan select dropdown
+  const sel = document.getElementById("stock-sensor-select");
+  if (sel && sel.value !== sensorId) {
+    sel.value = sensorId;
+  }
+
+  // Update watchlist chips
+  updateStockWatchlistBar();
+  updateStockTerminalHeader();
+  renderMonitoringLiveCharts();
+}
+
+// Handler Ganti Timeframe
+function setStockTimeframe(tf, btn) {
+  stockTimeframe = tf;
+  const pills = document.getElementById("stock-tf-pills");
+  if (pills) {
+    pills.querySelectorAll(".stock-tf-pill, .sb-tf-btn, .mon-pill-btn").forEach(p => p.classList.remove("active"));
+    if (btn) btn.classList.add("active");
+  }
+
+  // Reset candle history dengan rentang waktu baru
+  stockCandlesMap = {};
+  initStockCandles();
+  updateStockTerminalHeader();
+  renderMonitoringLiveCharts();
+}
+
+// Handler Ganti Jenis Grafik (Candle vs Line)
+function setStockChartType(type, btn) {
+  stockChartType = type;
+  const pills = document.getElementById("stock-chart-type-pills");
+  if (pills) {
+    pills.querySelectorAll(".stock-type-pill, .sb-icon-btn, .mon-pill-btn").forEach(p => p.classList.remove("active"));
     if (btn) btn.classList.add("active");
   }
   renderMonitoringLiveCharts();
 }
 
-const monSensorConfigs = [
-  { id: "0", label: "Link Temp (#0)", color: "#f59e0b", type: "temp", valEl: "mon-leg-val-0" },
-  { id: "3", label: "Right Bush (#3)", color: "#2563eb", type: "temp", valEl: "mon-leg-val-3" },
-  { id: "4", label: "Left Bush (#4)", color: "#06b6d4", type: "temp", valEl: "mon-leg-val-4" },
-  { id: "5", label: "Right Bearing (#5)", color: "#10b981", type: "temp", valEl: "mon-leg-val-5" },
-  { id: "6", label: "Left Bearing (#6)", color: "#ec4899", type: "temp", valEl: "mon-leg-val-6" },
-  { id: "1", label: "Vibration (#1)", color: "#8b5cf6", type: "vib", valEl: "mon-leg-val-1" },
-];
-
-function renderMonitoringLiveCharts() {
-  initStreamBuffers();
-
-  const monView = document.getElementById("view-monitoring");
-  if (!monView || (monView.style.display === "none" && activeView !== "monitoring")) return;
-
-  const dpr = window.devicePixelRatio || 1;
-
-  // 1. Gambar Sparkline Garis pada Setiap Kartu Sensor Komponen
-  monSensorConfigs.forEach(cfg => {
-    const canvas = document.getElementById(`sparkline-mon-${cfg.id}`);
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const w = Math.max(80, rect.width || canvas.parentElement?.clientWidth || 140);
-    const h = 48;
-
-    if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
-      canvas.width = Math.floor(w * dpr);
-      canvas.height = Math.floor(h * dpr);
-    }
-
-    const ctx = canvas.getContext("2d");
-    ctx.save();
-    ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, w, h);
-
-    const pts = streamSeriesMap[cfg.id] || [];
-    if (pts.length < 2) {
-      ctx.restore();
-      return;
-    }
-
-    const isVib = cfg.type === "vib";
-    let minVal = isVib ? 0.01 : 20.0;
-    let maxVal = isVib ? 0.08 : 65.0;
-
-    pts.forEach(p => {
-      if (p.val < minVal) minVal = p.val;
-      if (p.val > maxVal) maxVal = p.val;
-    });
-
-    const span = (maxVal - minVal) * 1.15 || 1;
-    const baseMin = minVal - (maxVal - minVal) * 0.08;
-
-    const padX = 2;
-    const padY = 5;
-    const plotW = w - padX * 2;
-    const plotH = h - padY * 2;
-    const totalSlots = STREAM_WINDOW_SIZE;
-
-    // Gradient Area Fill di bawah garis
-    const grad = ctx.createLinearGradient(0, padY, 0, h);
-    grad.addColorStop(0, cfg.color + "50");
-    grad.addColorStop(1, cfg.color + "05");
-
-    ctx.beginPath();
-    pts.forEach((pt, idx) => {
-      const x = padX + (idx / (totalSlots - 1)) * plotW;
-      const y = padY + plotH - ((pt.val - baseMin) / span) * plotH;
-      if (idx === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    const lastX = padX + ((pts.length - 1) / (totalSlots - 1)) * plotW;
-    ctx.lineTo(lastX, h);
-    ctx.lineTo(padX, h);
-    ctx.closePath();
-    ctx.fillStyle = grad;
-    ctx.fill();
-
-    // Gambar Garis Waveform
-    ctx.beginPath();
-    pts.forEach((pt, idx) => {
-      const x = padX + (idx / (totalSlots - 1)) * plotW;
-      const y = padY + plotH - ((pt.val - baseMin) / span) * plotH;
-      if (idx === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.strokeStyle = cfg.color;
-    ctx.lineWidth = 1.8;
-    ctx.lineJoin = "round";
-    ctx.stroke();
-
-    // Beacon pada data point terakhir
-    const latestPt = pts[pts.length - 1];
-    const endY = padY + plotH - ((latestPt.val - baseMin) / span) * plotH;
-
-    ctx.beginPath();
-    ctx.arc(lastX, endY, 3, 0, Math.PI * 2);
-    ctx.fillStyle = "#ffffff";
-    ctx.fill();
-    ctx.strokeStyle = cfg.color;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    ctx.restore();
-  });
-
-  // 2. Gambar Grafik Garis Utama Multi-Series Live Stream
-  const mainCanvas = document.getElementById("canvas-mon-live-chart");
-  if (!mainCanvas) return;
-
-  const mRect = mainCanvas.getBoundingClientRect();
-  const mW = Math.max(300, mRect.width || mainCanvas.parentElement?.clientWidth || 700);
-  const mH = 200;
-
-  if (mainCanvas.width !== Math.floor(mW * dpr) || mainCanvas.height !== Math.floor(mH * dpr)) {
-    mainCanvas.width = Math.floor(mW * dpr);
-    mainCanvas.height = Math.floor(mH * dpr);
+// Handler Toggle Indikator Teknikal
+function toggleStockIndicator(indName) {
+  stockIndicators[indName] = !stockIndicators[indName];
+  const btn = document.getElementById(`btn-ind-${indName}`);
+  if (btn) {
+    if (stockIndicators[indName]) btn.classList.add("active");
+    else btn.classList.remove("active");
   }
-
-  const mCtx = mainCanvas.getContext("2d");
-  mCtx.save();
-  mCtx.scale(dpr, dpr);
-  mCtx.clearRect(0, 0, mW, mH);
-
-  const mPad = { top: 20, right: monSensorFilter === "all" ? 54 : 25, bottom: 28, left: 45 };
-  const mPlotW = mW - mPad.left - mPad.right;
-  const mPlotH = mH - mPad.top - mPad.bottom;
-
-  // Filter konfigurasi sensor
-  const activeSensors = monSensorConfigs.filter(s => {
-    if (monSensorFilter === "temp") return s.type === "temp";
-    if (monSensorFilter === "vib") return s.type === "vib";
-    return true;
-  });
-
-  // Tentukan Rentang Skala Y
-  const isVibOnly = monSensorFilter === "vib";
-  const minY = 0;
-  const maxY = isVibOnly ? 0.12 : 80;
-
-  // Gambar Grid Sumbu Y
-  mCtx.strokeStyle = "#f1f5f9";
-  mCtx.lineWidth = 1;
-  mCtx.fillStyle = "#64748b";
-  mCtx.font = "10px 'JetBrains Mono', monospace";
-  mCtx.textAlign = "right";
-
-  const ySteps = isVibOnly ? [0, 0.03, 0.06, 0.09, 0.12] : [0, 20, 40, 60, 80];
-  ySteps.forEach(yVal => {
-    const yPos = mPad.top + mPlotH - ((yVal - minY) / (maxY - minY)) * mPlotH;
-    mCtx.beginPath();
-    mCtx.moveTo(mPad.left, yPos);
-    mCtx.lineTo(mW - mPad.right, yPos);
-    mCtx.stroke();
-    const lbl = isVibOnly ? `${yVal.toFixed(2)}` : `${yVal}°C`;
-    mCtx.fillText(lbl, mPad.left - 6, yPos + 3.5);
-  });
-
-  // Jika mode "all", gambar label sekunder di kanan untuk getaran (0 - 0.12 in/s)
-  if (monSensorFilter === "all") {
-    mCtx.textAlign = "left";
-    mCtx.fillStyle = "#8b5cf6";
-    const vSteps = [0, 0.03, 0.06, 0.09, 0.12];
-    vSteps.forEach(vVal => {
-      const yPos = mPad.top + mPlotH - (vVal / 0.12) * mPlotH;
-      mCtx.fillText(`${vVal.toFixed(2)} in/s`, mW - mPad.right + 6, yPos + 3.5);
-    });
-  }
-
-  // Garis Limit Threshold Peringatan (Ambang Batas)
-  mCtx.save();
-  mCtx.setLineDash([4, 4]);
-  mCtx.strokeStyle = "#ef4444";
-  mCtx.lineWidth = 1.2;
-  const warnLimitVal = isVibOnly ? 0.08 : 75;
-  const yWarn = mPad.top + mPlotH - ((warnLimitVal - minY) / (maxY - minY)) * mPlotH;
-  mCtx.beginPath();
-  mCtx.moveTo(mPad.left, yWarn);
-  mCtx.lineTo(mW - mPad.right, yWarn);
-  mCtx.stroke();
-  mCtx.fillStyle = "#ef4444";
-  mCtx.textAlign = "right";
-  mCtx.font = "bold 9px 'JetBrains Mono', monospace";
-  mCtx.fillText(isVibOnly ? "0.08 in/s" : "75°C", mW - mPad.right - 8, yWarn - 4);
-  mCtx.restore();
-
-  // Pulse effect untuk titik data terbaru
-  const pulseR = 4.5 + Math.sin(Date.now() / 200) * 2;
-  const totalSlots = STREAM_WINDOW_SIZE;
-
-  // Gambar Setiap Garis Sensor
-  activeSensors.forEach(cfg => {
-    const points = streamSeriesMap[cfg.id] || [];
-    if (points.length === 0) return;
-
-    const latestPt = points[points.length - 1];
-    const isVib = cfg.type === "vib";
-    const valText = latestPt ? (isVib ? `${fmtNum(latestPt.val, 3)} in/s` : `${fmtNum(latestPt.val, 1)} °C`) : "--";
-    setText(cfg.valEl, valText);
-
-    if (points.length < 2) return;
-
-    mCtx.beginPath();
-    mCtx.strokeStyle = cfg.color;
-    mCtx.lineWidth = isVib ? 2.4 : 2.0;
-    mCtx.lineJoin = "round";
-
-    points.forEach((pt, idx) => {
-      const xPos = mPad.left + (idx / (totalSlots - 1)) * mPlotW;
-      let normVal = pt.val;
-      if (monSensorFilter === "all" && isVib) {
-        // Normalisasikan vibration (0 - 0.12) ke rentang temperatur (0 - 80)
-        normVal = (pt.val / 0.12) * 80;
-      }
-      const clamped = Math.min(maxY, Math.max(minY, normVal));
-      const yPos = mPad.top + mPlotH - ((clamped - minY) / (maxY - minY)) * mPlotH;
-
-      if (idx === 0) mCtx.moveTo(xPos, yPos);
-      else mCtx.lineTo(xPos, yPos);
-    });
-    mCtx.stroke();
-
-    // Gambar titik data & denyut beacon live
-    points.forEach((pt, idx) => {
-      const isLast = idx === points.length - 1;
-      if (idx % 4 !== 0 && !isLast) return;
-
-      const xPos = mPad.left + (idx / (totalSlots - 1)) * mPlotW;
-      let normVal = pt.val;
-      if (monSensorFilter === "all" && isVib) {
-        normVal = (pt.val / 0.12) * 80;
-      }
-      const clamped = Math.min(maxY, Math.max(minY, normVal));
-      const yPos = mPad.top + mPlotH - ((clamped - minY) / (maxY - minY)) * mPlotH;
-
-      if (isLast) {
-        mCtx.save();
-        mCtx.beginPath();
-        mCtx.arc(xPos, yPos, pulseR, 0, Math.PI * 2);
-        mCtx.fillStyle = cfg.color + "33";
-        mCtx.fill();
-        mCtx.restore();
-      }
-
-      mCtx.beginPath();
-      mCtx.arc(xPos, yPos, isLast ? 3.5 : 2, 0, Math.PI * 2);
-      mCtx.fillStyle = "#ffffff";
-      mCtx.fill();
-      mCtx.strokeStyle = cfg.color;
-      mCtx.lineWidth = 1.8;
-      mCtx.stroke();
-    });
-  });
-
-  // Gambar Label Sumbu X (Timeline Waktu)
-  mCtx.fillStyle = "#64748b";
-  mCtx.font = "9px 'JetBrains Mono', monospace";
-  mCtx.textAlign = "center";
-  const xLabels = ["-30s", "-20s", "-10s", "Sekarang (Live)"];
-  xLabels.forEach((lbl, i) => {
-    const xPos = mPad.left + (i / 3) * mPlotW;
-    mCtx.fillText(lbl, xPos, mH - 10);
-  });
-
-  mCtx.restore();
+  renderMonitoringLiveCharts();
 }
+
+// Handler Tool Rail Samping
+function setRailTool(tool, btn) {
+  stockActiveTool = tool;
+  document.querySelectorAll(".rail-tool-btn, .mon-rail-btn").forEach(b => b.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+}
+
+// Handler Reset Zoom
+function resetStockChartZoom() {
+  stockCrosshairPos = null;
+  renderMonitoringLiveCharts();
+}
+
+// Handler Screenshot / Export Snapshot Grafik
+function exportStockChartSnapshot() {
+  const canvas = document.getElementById("canvas-mon-live-chart");
+  if (!canvas) return;
+
+  const dataUrl = canvas.toDataURL("image/png");
+  const a = document.createElement("a");
+  a.href = dataUrl;
+  a.download = `MTM_LiveChart_${stockActiveSensor}_${Date.now()}.png`;
+  a.click();
+}
+
+// Handler Filter Running Trade
+function setRtFilter(filter, btn) {
+  rtActiveFilter = filter;
+  const pills = document.getElementById("rt-filter-pills");
+  if (pills) {
+    pills.querySelectorAll(".rt-filter-btn, .sb-filter-btn, .mon-pill-btn").forEach(b => b.classList.remove("active"));
+    if (btn) btn.classList.add("active");
+  }
+  renderStockRunningTrades();
+}
+
+function filterRunningTrades() {
+  renderStockRunningTrades();
+}
+
+// Handler Pause / Resume Running Trade
+function toggleRtPause() {
+  isRtPaused = !isRtPaused;
+  const icon = document.getElementById("rt-pause-icon");
+  const lbl = document.getElementById("rt-pause-lbl");
+  if (icon && lbl) {
+    icon.textContent = isRtPaused ? "▶️" : "⏸️";
+    lbl.textContent = isRtPaused ? "Resume" : "Pause";
+  }
+}
+
+// Handler Clear Riwayat Perubahan
+function clearRunningTrades() {
+  stockRunningTrades = [];
+  renderStockRunningTrades();
+}
+
 
 // Window resize listener to re-draw canvas charts smoothly
 window.addEventListener("resize", () => {
@@ -3256,6 +4740,10 @@ function refreshAll() {
   fetchTelemetry();
   fetchDashboardCharts();
   updatePillarDashboardCounts();
+
+  if (activeView === "history") {
+    fetchHistoryTelemetry();
+  }
 }
 
 function startPolling() {
@@ -3300,6 +4788,653 @@ function renderAllViews() {
   renderPdmView();
 }
 
+// ========================================================
+// 9. PORTAL ADMINISTRATOR & MASTER DATA SYSTEM LOGIC
+// ========================================================
+
+const DEFAULT_MASTER_USERS = [
+  {
+    npk: "MTM-1001",
+    nama: "Bambang Suryanto",
+    username: "admin",
+    role: "Super Admin",
+    dept: "Plant Maintenance & IT",
+    status: "Aktif",
+    badgeColor: "purple",
+    lastLogin: "Hari ini, 15:30"
+  },
+  {
+    npk: "MTM-1045",
+    nama: "Rizky Firmansyah, S.T.",
+    username: "rizky.f",
+    role: "Maintenance Engineer",
+    dept: "Predictive Maintenance (PdM)",
+    status: "Aktif",
+    badgeColor: "blue",
+    lastLogin: "Hari ini, 14:15"
+  },
+  {
+    npk: "MTM-2088",
+    nama: "Eko Prasetyo",
+    username: "eko.p",
+    role: "Maintenance Technician",
+    dept: "Forging Maintenance Section",
+    status: "Aktif",
+    badgeColor: "cyan",
+    lastLogin: "Kemarin, 16:00"
+  },
+  {
+    npk: "MTM-3104",
+    nama: "Agus Priyanto",
+    username: "agus.p",
+    role: "Line Leader Produksi",
+    dept: "Produksi Hot Forging Line 2",
+    status: "Aktif",
+    badgeColor: "amber",
+    lastLogin: "Hari ini, 07:45"
+  },
+  {
+    npk: "MTM-4001",
+    nama: "Hendra Wijaya, M.T.",
+    username: "hendra.w",
+    role: "Section Head",
+    dept: "Machining & Stamping Maintenance",
+    status: "Aktif",
+    badgeColor: "emerald",
+    lastLogin: "3 hari lalu"
+  }
+];
+
+const DEFAULT_MASTER_MACHINES = [
+  {
+    code: "MCH-FORG-630T",
+    name: "Jingduan Forging Press 630T",
+    brand: "Jingduan Machinery Co.",
+    line: "Line 2 Hot Forging (Plant 1)",
+    capacity: "630 Ton",
+    statusIoT: "Connected (6 Sensor Online)",
+    mtbfTarget: "150 Jam",
+    mttrTarget: "25 Menit",
+    pic: "Rizky Firmansyah (PdM)"
+  },
+  {
+    code: "MCH-STAMP-500T",
+    name: "Aida Mechanical Press 500T",
+    brand: "Aida Engineering Japan",
+    line: "Line 1 Stamping & Blanking",
+    capacity: "500 Ton",
+    statusIoT: "Standby (Manual PM)",
+    mtbfTarget: "120 Jam",
+    mttrTarget: "30 Menit",
+    pic: "Eko Prasetyo"
+  },
+  {
+    code: "MCH-FORG-1000T",
+    name: "Komatsu Heavy Forging 1000T",
+    brand: "Komatsu Industries",
+    line: "Line 3 Heavy Forging",
+    capacity: "1000 Ton",
+    statusIoT: "Planned IoT Deployment",
+    mtbfTarget: "180 Jam",
+    mttrTarget: "20 Menit",
+    pic: "Bambang Suryanto"
+  },
+  {
+    code: "MCH-ROBOT-WELD",
+    name: "Fanuc Spot Welding Cell 6-Axis",
+    brand: "Fanuc Robotics",
+    line: "Line Sub-Assembly & Welding",
+    capacity: "Payload 210 Kg",
+    statusIoT: "Standby (Manual Checklist)",
+    mtbfTarget: "200 Jam",
+    mttrTarget: "15 Menit",
+    pic: "Agus Priyanto"
+  }
+];
+
+const DEFAULT_MASTER_SENSORS = [
+  {
+    deviceId: "eccentric-shaft",
+    name: "Eccentric Shaft Bearing Temperature",
+    machine: "Jingduan Forging Press 630T",
+    parameter: "Temperatur Operasi",
+    unit: "°C",
+    warnThreshold: 50.0,
+    critThreshold: 70.0,
+    samplingRate: "5 detik",
+    status: "Online / Terkalibrasi"
+  },
+  {
+    deviceId: "flywheel-bearing",
+    name: "Flywheel Main Bearing Temperature",
+    machine: "Jingduan Forging Press 630T",
+    parameter: "Temperatur Operasi",
+    unit: "°C",
+    warnThreshold: 50.0,
+    critThreshold: 70.0,
+    samplingRate: "5 detik",
+    status: "Online / Terkalibrasi"
+  },
+  {
+    deviceId: "link-temperature",
+    name: "Connecting Rod Bushing Temperature",
+    machine: "Jingduan Forging Press 630T",
+    parameter: "Temperatur Operasi",
+    unit: "°C",
+    warnThreshold: 50.0,
+    critThreshold: 70.0,
+    samplingRate: "5 detik",
+    status: "Online / Terkalibrasi"
+  },
+  {
+    deviceId: "motor-drive",
+    name: "Main Drive Motor Coil Temperature",
+    machine: "Jingduan Forging Press 630T",
+    parameter: "Temperatur Stator Coil",
+    unit: "°C",
+    warnThreshold: 65.0,
+    critThreshold: 80.0,
+    samplingRate: "5 detik",
+    status: "Online / Terkalibrasi"
+  },
+  {
+    deviceId: "main-bearing",
+    name: "Crankshaft Main Bearing Temperature",
+    machine: "Jingduan Forging Press 630T",
+    parameter: "Temperatur Operasi",
+    unit: "°C",
+    warnThreshold: 50.0,
+    critThreshold: 70.0,
+    samplingRate: "5 detik",
+    status: "Online / Terkalibrasi"
+  },
+  {
+    deviceId: "vibration-sensor",
+    name: "Tri-Axial Vibration Velocity RMS",
+    machine: "Jingduan Forging Press 630T",
+    parameter: "Kecepatan Getaran (RMS)",
+    unit: "mm/s",
+    warnThreshold: 4.5,
+    critThreshold: 7.1,
+    samplingRate: "1 detik",
+    status: "Online / Terkalibrasi"
+  }
+];
+
+const DEFAULT_MASTER_SHIFTS = [
+  {
+    code: "SHIFT-1",
+    name: "Shift 1 (Malam - Dini Hari)",
+    timeRange: "00:00 - 07:40",
+    duration: "7 Jam 40 Menit",
+    handover: "10 Menit (07:30 - 07:40)",
+    leader: "Supriyanto",
+    status: "Aktif"
+  },
+  {
+    code: "SHIFT-2",
+    name: "Shift 2 (Pagi - Siang)",
+    timeRange: "07:30 - 16:10",
+    duration: "8 Jam 40 Menit",
+    handover: "10 Menit (16:00 - 16:10)",
+    leader: "Dedi Kurniawan",
+    status: "Aktif"
+  },
+  {
+    code: "SHIFT-3",
+    name: "Shift 3 (Sore - Malam)",
+    timeRange: "16:10 - 00:00",
+    duration: "7 Jam 50 Menit",
+    handover: "10 Menit (23:50 - 00:00)",
+    leader: "Arif Wibowo",
+    status: "Aktif"
+  }
+];
+
+let masterUsersData = [];
+let masterMachinesData = [];
+let masterSensorsData = [];
+let masterShiftsData = [];
+let currentAdminTab = "users";
+
+function initAdminPortal() {
+  try {
+    const rawUsers = localStorage.getItem("mtm_master_users");
+    masterUsersData = rawUsers ? JSON.parse(rawUsers) : [...DEFAULT_MASTER_USERS];
+
+    const rawMachines = localStorage.getItem("mtm_master_machines");
+    masterMachinesData = rawMachines ? JSON.parse(rawMachines) : [...DEFAULT_MASTER_MACHINES];
+
+    const rawSensors = localStorage.getItem("mtm_master_sensors");
+    masterSensorsData = rawSensors ? JSON.parse(rawSensors) : [...DEFAULT_MASTER_SENSORS];
+
+    const rawShifts = localStorage.getItem("mtm_master_shifts");
+    masterShiftsData = rawShifts ? JSON.parse(rawShifts) : [...DEFAULT_MASTER_SHIFTS];
+
+    updateAdminTabCounts();
+  } catch (err) {
+    console.error("Error initAdminPortal:", err);
+    masterUsersData = [...DEFAULT_MASTER_USERS];
+    masterMachinesData = [...DEFAULT_MASTER_MACHINES];
+    masterSensorsData = [...DEFAULT_MASTER_SENSORS];
+    masterShiftsData = [...DEFAULT_MASTER_SHIFTS];
+  }
+}
+
+function updateAdminTabCounts() {
+  const cUsers = document.getElementById("count-admin-users");
+  if (cUsers) cUsers.textContent = masterUsersData.length;
+
+  const cMachines = document.getElementById("count-admin-machines");
+  if (cMachines) cMachines.textContent = masterMachinesData.length;
+
+  const cSensors = document.getElementById("count-admin-sensors");
+  if (cSensors) cSensors.textContent = masterSensorsData.length;
+
+  const cShifts = document.getElementById("count-admin-shifts");
+  if (cShifts) cShifts.textContent = masterShiftsData.length;
+}
+
+function switchAdminPortalTab(tabName) {
+  currentAdminTab = tabName;
+  const tabs = ["users", "machines", "sensors", "shifts", "system"];
+  tabs.forEach(t => {
+    const btn = document.getElementById(`admin-tab-btn-${t}`);
+    const pane = document.getElementById(`admin-pane-${t}`);
+    if (btn) {
+      if (t === tabName) btn.classList.add("active");
+      else btn.classList.remove("active");
+    }
+    if (pane) {
+      pane.style.display = (t === tabName) ? "block" : "none";
+    }
+  });
+
+  if (tabName === "users") renderAdminUsersTable();
+  else if (tabName === "machines") renderAdminMachinesTable();
+  else if (tabName === "sensors") renderAdminSensorsTable();
+  else if (tabName === "shifts") renderAdminShiftsTable();
+}
+
+function getRoleBadgeClass(role) {
+  const r = (role || "").toLowerCase();
+  if (r.includes("super")) return "purple";
+  if (r.includes("engineer")) return "blue";
+  if (r.includes("technician")) return "cyan";
+  if (r.includes("leader")) return "amber";
+  if (r.includes("head")) return "emerald";
+  return "slate";
+}
+
+function renderAdminUsersTable(filteredList) {
+  const tbody = document.getElementById("admin-users-tbody");
+  if (!tbody) return;
+
+  const list = filteredList || masterUsersData;
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:24px; color:#64748b;">Tidak ada user yang sesuai kriteria pencarian.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map((u, idx) => {
+    const realIndex = masterUsersData.findIndex(item => item.npk === u.npk);
+    const badgeClass = getRoleBadgeClass(u.role);
+    const isAktif = u.status === "Aktif";
+    return `
+      <tr>
+        <td><strong style="font-family:var(--font-mono); color:#1e40af;">${u.npk}</strong></td>
+        <td>
+          <div style="font-weight:700; color:#0f172a;">${u.nama}</div>
+          <div style="font-size:0.7rem; color:#64748b;">@${u.username}</div>
+        </td>
+        <td><span class="role-badge ${badgeClass}">${u.role}</span></td>
+        <td><span style="color:#334155; font-size:0.78rem;">${u.dept}</span></td>
+        <td>
+          <span class="status-pill ${isAktif ? 'active' : 'inactive'}">
+            <span style="width:6px; height:6px; border-radius:50%; background:${isAktif ? '#10b981' : '#ef4444'};"></span>
+            ${u.status}
+          </span>
+        </td>
+        <td style="color:#64748b; font-size:0.75rem;">${u.lastLogin || '-'}</td>
+        <td style="text-align:right;">
+          <div style="display:inline-flex; gap:6px;">
+            <button type="button" class="admin-action-btn" onclick="openEditUserModal(${realIndex})" title="Edit User">Edit</button>
+            <button type="button" class="admin-action-btn ${isAktif ? 'btn-danger-soft' : ''}" onclick="toggleUserStatus(${realIndex})" title="Ubah Status">
+              ${isAktif ? 'Nonaktifkan' : 'Aktifkan'}
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function filterAdminUsersTable() {
+  const q = (document.getElementById("admin-user-search")?.value || "").toLowerCase().trim();
+  const roleFilter = (document.getElementById("admin-user-role-filter")?.value || "").toLowerCase().trim();
+
+  const filtered = masterUsersData.filter(u => {
+    const matchQuery = !q || u.npk.toLowerCase().includes(q) || u.nama.toLowerCase().includes(q) || u.username.toLowerCase().includes(q) || u.dept.toLowerCase().includes(q);
+    const matchRole = !roleFilter || u.role.toLowerCase().includes(roleFilter);
+    return matchQuery && matchRole;
+  });
+
+  renderAdminUsersTable(filtered);
+}
+
+function openAddUserModal() {
+  document.getElementById("form-user-edit-index").value = "-1";
+  document.getElementById("admin-user-modal-title").textContent = "Tambah User & Role Baru";
+  document.getElementById("form-user-npk").value = "";
+  document.getElementById("form-user-nama").value = "";
+  document.getElementById("form-user-username").value = "";
+  document.getElementById("form-user-role").value = "Maintenance Technician";
+  document.getElementById("form-user-dept").value = "Plant Maintenance";
+  document.getElementById("form-user-status").value = "Aktif";
+
+  document.getElementById("modal-admin-user-form").style.display = "flex";
+}
+
+function openEditUserModal(index) {
+  const u = masterUsersData[index];
+  if (!u) return;
+
+  document.getElementById("form-user-edit-index").value = index;
+  document.getElementById("admin-user-modal-title").textContent = "Edit Data User & Role";
+  document.getElementById("form-user-npk").value = u.npk;
+  document.getElementById("form-user-nama").value = u.nama;
+  document.getElementById("form-user-username").value = u.username;
+  document.getElementById("form-user-role").value = u.role;
+  document.getElementById("form-user-dept").value = u.dept;
+  document.getElementById("form-user-status").value = u.status;
+
+  document.getElementById("modal-admin-user-form").style.display = "flex";
+}
+
+function handleSaveAdminUser(e) {
+  e.preventDefault();
+  const idx = parseInt(document.getElementById("form-user-edit-index").value, 10);
+  const npk = document.getElementById("form-user-npk").value.trim();
+  const nama = document.getElementById("form-user-nama").value.trim();
+  const username = document.getElementById("form-user-username").value.trim();
+  const role = document.getElementById("form-user-role").value;
+  const dept = document.getElementById("form-user-dept").value.trim();
+  const status = document.getElementById("form-user-status").value;
+
+  if (!npk || !nama || !username) {
+    showToast("Harap lengkapi semua isian formulir user!", "error");
+    return;
+  }
+
+  const userObj = {
+    npk,
+    nama,
+    username,
+    role,
+    dept,
+    status,
+    badgeColor: getRoleBadgeClass(role),
+    lastLogin: idx >= 0 ? masterUsersData[idx].lastLogin : "Baru Dibuat"
+  };
+
+  if (idx >= 0) {
+    masterUsersData[idx] = userObj;
+    showToast(`Data user ${nama} berhasil diperbarui.`, "success");
+  } else {
+    // Check duplicate NPK
+    if (masterUsersData.some(item => item.npk.toLowerCase() === npk.toLowerCase())) {
+      showToast(`User dengan NPK ${npk} sudah terdaftar!`, "error");
+      return;
+    }
+    masterUsersData.unshift(userObj);
+    showToast(`User ${nama} (${role}) berhasil ditambahkan.`, "success");
+  }
+
+  localStorage.setItem("mtm_master_users", JSON.stringify(masterUsersData));
+  updateAdminTabCounts();
+  renderAdminUsersTable();
+  closeModal("modal-admin-user-form");
+}
+
+function toggleUserStatus(index) {
+  const u = masterUsersData[index];
+  if (!u) return;
+
+  u.status = (u.status === "Aktif") ? "Nonaktif" : "Aktif";
+  localStorage.setItem("mtm_master_users", JSON.stringify(masterUsersData));
+  renderAdminUsersTable();
+  showToast(`Status user ${u.nama} diubah menjadi ${u.status}.`, "info");
+}
+
+function renderAdminMachinesTable(filteredList) {
+  const tbody = document.getElementById("admin-machines-tbody");
+  if (!tbody) return;
+
+  const list = filteredList || masterMachinesData;
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:24px; color:#64748b;">Tidak ada data mesin ditemukan.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map((m) => {
+    const isOnline = m.statusIoT.toLowerCase().includes("online") || m.statusIoT.toLowerCase().includes("connected");
+    return `
+      <tr>
+        <td><strong style="font-family:var(--font-mono); color:#1e40af;">${m.code}</strong></td>
+        <td>
+          <div style="font-weight:700; color:#0f172a;">${m.name}</div>
+          <div style="font-size:0.7rem; color:#64748b;">${m.brand || '-'}</div>
+        </td>
+        <td><span style="font-weight:600; color:#334155;">${m.line}</span></td>
+        <td><span style="background:#f1f5f9; padding:2px 8px; border-radius:6px; font-weight:700; font-size:0.75rem;">${m.capacity}</span></td>
+        <td>
+          <span class="status-pill ${isOnline ? 'active' : 'inactive'}">
+            <span style="width:6px; height:6px; border-radius:50%; background:${isOnline ? '#10b981' : '#f59e0b'};"></span>
+            ${m.statusIoT}
+          </span>
+        </td>
+        <td style="font-size:0.75rem; color:#475569;">
+          <div>MTBF: <strong>${m.mtbfTarget}</strong></div>
+          <div>MTTR: <strong>${m.mttrTarget}</strong></div>
+        </td>
+        <td style="font-size:0.75rem; color:#64748b;">${m.pic || '-'}</td>
+        <td style="text-align:right;">
+          <button type="button" class="admin-action-btn" onclick="showToast('Detail spesifikasi mesin ${m.code} siap diinspeksi.', 'info')">Detail</button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function filterAdminMachinesTable() {
+  const q = (document.getElementById("admin-machine-search")?.value || "").toLowerCase().trim();
+  const filtered = masterMachinesData.filter(m => {
+    return !q || m.code.toLowerCase().includes(q) || m.name.toLowerCase().includes(q) || m.line.toLowerCase().includes(q);
+  });
+  renderAdminMachinesTable(filtered);
+}
+
+function openAddMachineModal() {
+  document.getElementById("form-mch-code").value = "";
+  document.getElementById("form-mch-name").value = "";
+  document.getElementById("form-mch-line").value = "";
+  document.getElementById("form-mch-cap").value = "";
+  document.getElementById("modal-admin-machine-form").style.display = "flex";
+}
+
+function handleSaveAdminMachine(e) {
+  e.preventDefault();
+  const code = document.getElementById("form-mch-code").value.trim();
+  const name = document.getElementById("form-mch-name").value.trim();
+  const line = document.getElementById("form-mch-line").value.trim();
+  const capacity = document.getElementById("form-mch-cap").value.trim();
+  const mtbfTarget = document.getElementById("form-mch-mtbf").value.trim() || "150 Jam";
+  const mttrTarget = document.getElementById("form-mch-mttr").value.trim() || "30 Menit";
+
+  if (!code || !name || !line) {
+    showToast("Lengkapi kode, nama, dan line mesin!", "error");
+    return;
+  }
+
+  const newMachine = {
+    code,
+    name,
+    brand: "Standard Industrial Machine",
+    line,
+    capacity,
+    statusIoT: "Standby (Manual PM)",
+    mtbfTarget,
+    mttrTarget,
+    pic: "Maintenance Team"
+  };
+
+  masterMachinesData.push(newMachine);
+  localStorage.setItem("mtm_master_machines", JSON.stringify(masterMachinesData));
+  updateAdminTabCounts();
+  renderAdminMachinesTable();
+  closeModal("modal-admin-machine-form");
+  showToast(`Mesin ${name} (${code}) berhasil ditambahkan ke master data.`, "success");
+}
+
+function renderAdminSensorsTable() {
+  const tbody = document.getElementById("admin-sensors-tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = masterSensorsData.map((s) => {
+    return `
+      <tr>
+        <td><strong style="font-family:var(--font-mono); color:#1e40af;">${s.deviceId}</strong></td>
+        <td>
+          <div style="font-weight:700; color:#0f172a;">${s.name}</div>
+          <div style="font-size:0.7rem; color:#64748b;">${s.machine}</div>
+        </td>
+        <td><span style="font-weight:600; color:#334155;">${s.parameter} (${s.unit})</span></td>
+        <td>
+          <span style="background:#fffbeb; color:#b45309; border:1px solid #fde68a; font-weight:800; padding:2px 8px; border-radius:6px; font-family:var(--font-mono); font-size:0.78rem;">
+            &ge; ${s.warnThreshold} ${s.unit}
+          </span>
+        </td>
+        <td>
+          <span style="background:#fee2e2; color:#dc2626; border:1px solid #fca5a5; font-weight:800; padding:2px 8px; border-radius:6px; font-family:var(--font-mono); font-size:0.78rem;">
+            &ge; ${s.critThreshold} ${s.unit}
+          </span>
+        </td>
+        <td style="color:#64748b; font-size:0.75rem;">${s.samplingRate}</td>
+        <td>
+          <span class="status-pill active">
+            <span style="width:6px; height:6px; border-radius:50%; background:#10b981;"></span>
+            ${s.status}
+          </span>
+        </td>
+        <td style="text-align:right;">
+          <button type="button" class="admin-action-btn" onclick="openEditSensorModal('${s.deviceId}')" title="Sesuaikan Ambang Batas">
+            Edit Ambang
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function openEditSensorModal(deviceId) {
+  const s = masterSensorsData.find(item => item.deviceId === deviceId);
+  if (!s) return;
+
+  document.getElementById("form-sensor-device-id").value = s.deviceId;
+  document.getElementById("form-sensor-name-lbl").textContent = s.name;
+  document.getElementById("form-sensor-machine-lbl").textContent = `${s.machine} • Satuan: ${s.unit}`;
+  document.getElementById("form-sensor-warn-lbl").textContent = `Ambang Warning (${s.unit})`;
+  document.getElementById("form-sensor-crit-lbl").textContent = `Ambang Critical (${s.unit})`;
+
+  document.getElementById("form-sensor-warn").value = s.warnThreshold;
+  document.getElementById("form-sensor-crit").value = s.critThreshold;
+
+  document.getElementById("modal-admin-sensor-form").style.display = "flex";
+}
+
+function handleSaveSensorThreshold(e) {
+  e.preventDefault();
+  const deviceId = document.getElementById("form-sensor-device-id").value;
+  const warn = parseFloat(document.getElementById("form-sensor-warn").value);
+  const crit = parseFloat(document.getElementById("form-sensor-crit").value);
+
+  if (isNaN(warn) || isNaN(crit) || warn >= crit) {
+    showToast("Ambang batas Warning harus lebih kecil dari Critical!", "error");
+    return;
+  }
+
+  const s = masterSensorsData.find(item => item.deviceId === deviceId);
+  if (s) {
+    s.warnThreshold = warn;
+    s.critThreshold = crit;
+    localStorage.setItem("mtm_master_sensors", JSON.stringify(masterSensorsData));
+    renderAdminSensorsTable();
+    closeModal("modal-admin-sensor-form");
+    showToast(`Ambang batas sensor ${s.name} berhasil diperbarui (Warn: ${warn}, Crit: ${crit}).`, "success");
+  }
+}
+
+function renderAdminShiftsTable() {
+  const tbody = document.getElementById("admin-shifts-tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = masterShiftsData.map((sh) => {
+    return `
+      <tr>
+        <td><strong style="font-family:var(--font-mono); color:#1e40af;">${sh.code}</strong></td>
+        <td><strong style="color:#0f172a;">${sh.name}</strong></td>
+        <td>
+          <span style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; font-weight:800; padding:3px 10px; border-radius:999px; font-family:var(--font-mono); font-size:0.78rem;">
+            ${sh.timeRange}
+          </span>
+        </td>
+        <td style="color:#334155; font-weight:600;">${sh.duration}</td>
+        <td style="color:#64748b; font-size:0.75rem;">${sh.handover}</td>
+        <td><strong style="color:#0f172a;">${sh.leader}</strong></td>
+        <td>
+          <span class="status-pill active">
+            <span style="width:6px; height:6px; border-radius:50%; background:#10b981;"></span>
+            ${sh.status}
+          </span>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function exportAdminMasterDataJson() {
+  const exportData = {
+    exportedAt: new Date().toISOString(),
+    system: "MAINTENANCE APPS - PT Menara Terus Makmur (Astra Otoparts Group)",
+    users: masterUsersData,
+    machines: masterMachinesData,
+    sensors: masterSensorsData,
+    shifts: masterShiftsData
+  };
+
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+  const downloadAnchor = document.createElement("a");
+  downloadAnchor.setAttribute("href", dataStr);
+  downloadAnchor.setAttribute("download", `MTM_MasterData_${new Date().toISOString().slice(0,10)}.json`);
+  document.body.appendChild(downloadAnchor);
+  downloadAnchor.click();
+  downloadAnchor.remove();
+
+  showToast("File JSON Master Data berhasil diunduh.", "success");
+}
+
+function resetMasterDataToDefault() {
+  if (confirm("Apakah Anda yakin ingin mengembalikan semua data master ke setelan pabrik default? Data kustom akan direset.")) {
+    localStorage.removeItem("mtm_master_users");
+    localStorage.removeItem("mtm_master_machines");
+    localStorage.removeItem("mtm_master_sensors");
+    localStorage.removeItem("mtm_master_shifts");
+    initAdminPortal();
+    switchAdminPortalTab("users");
+    showToast("Master Data telah berhasil direset ke setelan awal pabrik.", "success");
+  }
+}
+
 // Auto-check session on page load
 document.addEventListener("DOMContentLoaded", () => {
   renderAllViews();
@@ -3310,5 +5445,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const filterSelect = document.getElementById("filter-device");
   if (filterSelect) {
     filterSelect.addEventListener("change", () => fetchTelemetry());
+  }
+
+  // Cek apakah pengguna sudah memiliki sesi login tersimpan
+  const savedUser = localStorage.getItem("mtm_user");
+  if (savedUser) {
+    try {
+      const u = JSON.parse(savedUser);
+      performLogin(u, false);
+    } catch (e) {
+      console.warn("Sesi kadaluarsa:", e);
+    }
+  } else {
+    const login = document.getElementById("login-screen");
+    if (login) login.style.display = "flex";
+    const hub = document.getElementById("hub-screen");
+    if (hub) hub.style.display = "none";
+    const main = document.getElementById("main-app");
+    if (main) main.style.display = "none";
   }
 });
