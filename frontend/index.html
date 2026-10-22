@@ -8,7 +8,21 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Text:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="assets/logo-mtm-icon.png">
-  <link rel="stylesheet" href="style.css?v=2.3.0">
+  <link rel="stylesheet" href="style.css?v=2.9.8">
+  <script>
+    // Early session bootstrap: cegah login screen muncul saat refresh web
+    try {
+      if (localStorage.getItem("mtm_logged_out") !== "true") {
+        if (!localStorage.getItem("mtm_user")) {
+          localStorage.setItem("mtm_user", JSON.stringify({
+            username: "pic_maintenance",
+            displayName: "PIC Maintenance",
+            role: "Admin / PIC Maintenance"
+          }));
+        }
+      }
+    } catch(e) {}
+  </script>
 </head>
 <body>
 
@@ -72,7 +86,7 @@
   <!-- ======================================================== -->
   <!-- 1. LOGIN SCREEN (Matches Reference Image 2)              -->
   <!-- ======================================================== -->
-  <div id="login-screen" class="login-container">
+  <div id="login-screen" class="login-container" style="display: none;">
     <div class="login-bg-overlay"></div>
 
     <div class="login-card">
@@ -162,10 +176,11 @@
         <!-- 3 Module Cards Grid -->
         <div class="hub-cards-grid">
           
-          <!-- CARD 1: PREVENTIVE MAINTENANCE (Under Development) -->
-          <div class="hub-module-card hub-card-disabled" onclick="handlePmClick()" title="Klik untuk informasi status modul">
-            <div class="hub-icon-box">
-              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <!-- CARD 1: PREVENTIVE MAINTENANCE (ACTIVE - Click to Enter) -->
+          <div class="hub-module-card hub-card-active hub-card-pm" onclick="enterPreventiveMaintenance()" title="Klik untuk membuka Modul Preventive Maintenance (5 Sub-Modul)">
+            <div class="hub-badge-notification" title="5 Sub-Modul Tersedia" style="background:#d97706;">5</div>
+            <div class="hub-icon-box" style="background:#fef3c7;">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                 <polyline points="14 2 14 8 20 8"></polyline>
                 <line x1="16" y1="13" x2="8" y2="13"></line>
@@ -174,10 +189,10 @@
               </svg>
             </div>
             <h3 class="hub-card-title">PREVENTIVE MAINTENANCE</h3>
-            <p class="hub-card-subtitle">Periodic Inspection, Checklist & PM Schedule</p>
-            <div class="hub-card-pill pill-muted">
-              <span class="hub-pill-dot dot-gray"></span>
-              <span>Dalam Pengembangan</span>
+            <p class="hub-card-subtitle">PM & Accuracy Dashboard, Kalender, Abnormality & Overhaul</p>
+            <div class="hub-card-pill" style="background:#ecfdf5; color:#059669; border-color:#a7f3d0;">
+              <span class="hub-pill-dot" style="background:#10b981;"></span>
+              <span>Siap Digunakan (5 Modul)</span>
             </div>
           </div>
 
@@ -263,41 +278,87 @@
         </div>
       </div>
 
-      <!-- Module Section Header (Sleek, Modern & Non-Rigid) -->
-      <div class="sidebar-module-header">
-        <div class="module-chip">
-          <span class="module-chip-dot"></span>
-          <span class="module-chip-text">Predictive Maintenance</span>
-        </div>
-      </div>
-
-      <!-- Navigation Menu: Dashboard, Monitoring, Riwayat Data Masuk -->
+      <!-- Navigation Menus (Grouped by Module) -->
       <nav class="sidebar-nav">
-        <button class="nav-item active" id="nav-dashboard" onclick="switchMainView('dashboard')" data-short="DB">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="7" height="7"></rect>
-            <rect x="14" y="3" width="7" height="7"></rect>
-            <rect x="14" y="14" width="7" height="7"></rect>
-            <rect x="3" y="14" width="7" height="7"></rect>
-          </svg>
-          <span>Dashboard</span>
-        </button>
+        <!-- 1. GROUP PREVENTIVE MAINTENANCE (5 SUB-MODUL) -->
+        <div id="sidebar-nav-pm" class="sidebar-nav-group">
+          <button class="nav-item active" id="nav-pm-dashboard" onclick="switchMainView('pm-dashboard')" data-short="PM-DB">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            <span>Dashboard PM & Accuracy</span>
+          </button>
 
-        <button class="nav-item" id="nav-monitoring" onclick="switchMainView('monitoring')" data-short="MON">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-          </svg>
-          <span>Monitoring</span>
-        </button>
+          <button class="nav-item" id="nav-pm-schedule" onclick="switchMainView('pm-schedule')" data-short="PM-SCH">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <span>Preventive Maintenance</span>
+          </button>
 
-        <button class="nav-item" id="nav-history" onclick="switchMainView('history')" data-short="HIST">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <polyline points="12 6 12 12 14 14"></polyline>
-            <path d="M3 12a9 9 0 0 1 9-9"></path>
-          </svg>
-          <span>Riwayat Data Masuk</span>
-        </button>
+          <button class="nav-item" id="nav-pm-accuracy" onclick="switchMainView('pm-accuracy')" data-short="PM-ACC">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="22" y1="12" x2="18" y2="12"></line>
+              <line x1="6" y1="12" x2="2" y2="12"></line>
+              <line x1="12" y1="6" x2="12" y2="2"></line>
+              <line x1="12" y1="22" x2="12" y2="18"></line>
+            </svg>
+            <span>Machine Accuracy Check</span>
+          </button>
+
+          <button class="nav-item" id="nav-pm-abnormality" onclick="switchMainView('pm-abnormality')" data-short="PM-ABN">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            <span>Abnormality & Breakdown</span>
+          </button>
+
+          <button class="nav-item" id="nav-pm-overhaul" onclick="switchMainView('pm-overhaul')" data-short="PM-OVH">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span>Overhaul Schedule</span>
+          </button>
+        </div>
+
+        <!-- 2. GROUP PREDICTIVE MAINTENANCE (3 SUB-MODUL) -->
+        <div id="sidebar-nav-pdm" class="sidebar-nav-group" style="display:none;">
+          <button class="nav-item" id="nav-dashboard" onclick="switchMainView('dashboard')" data-short="DB" title="Dashboard Sensor IoT">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            <span>Dashboard</span>
+          </button>
+
+          <button class="nav-item" id="nav-monitoring" onclick="switchMainView('monitoring')" data-short="MON" title="Monitoring Real-Time Candlestick">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+            <span>Monitoring</span>
+          </button>
+
+          <button class="nav-item" id="nav-history" onclick="switchMainView('history')" data-short="HIST" title="Riwayat Data Masuk Telemetri">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 14 14"></polyline>
+              <path d="M3 12a9 9 0 0 1 9-9"></path>
+            </svg>
+            <span>Riwayat Data Masuk</span>
+          </button>
+        </div>
       </nav>
 
       <!-- Maintenance Tools Silhouette & Shadow (High Definition Sculpted) -->
@@ -446,7 +507,7 @@
               <line x1="3" y1="18" x2="21" y2="18"></line>
             </svg>
           </button>
-          <span class="topbar-title" id="topbar-page-title">DASHBOARD</span>
+          <span class="topbar-title" id="topbar-page-title"></span>
         </div>
 
         <div class="topbar-right">
@@ -534,6 +595,11 @@
                     <h3 class="dash-chart-title">Tren Suhu Titik Kritis</h3>
                   </div>
                 </div>
+                <div class="dash-temp-stat-pills">
+                  <span class="temp-stat-pill min">Min: <strong id="temp-stat-min">--.- °C</strong></span>
+                  <span class="temp-stat-pill avg">Avg: <strong id="temp-stat-avg">--.- °C</strong></span>
+                  <span class="temp-stat-pill peak">Peak: <strong id="temp-stat-peak">--.- °C</strong></span>
+                </div>
                 <div class="dash-chart-filters">
                   <div class="dash-tab-group" id="temp-chart-filter-group">
                     <button class="dash-tab active" onclick="setTempChartFilter('all', this)">Semua Titik</button>
@@ -548,6 +614,30 @@
               <div class="dash-canvas-wrap" id="temp-canvas-container">
                 <canvas id="canvas-temp-chart" height="260"></canvas>
                 <div id="temp-chart-tooltip" class="dash-chart-tooltip"></div>
+              </div>
+
+              <!-- Strip Legend & Nilai Real-Time Sensor -->
+              <div class="dash-sensor-legend-bar">
+                <div class="dash-sensor-legend-item">
+                  <span class="dash-sensor-dot" style="background:#f59e0b;"></span>
+                  <span>Link Temp: <strong id="leg-val-0">--.- °C</strong></span>
+                </div>
+                <div class="dash-sensor-legend-item">
+                  <span class="dash-sensor-dot" style="background:#2563eb;"></span>
+                  <span>Right Bush: <strong id="leg-val-3">--.- °C</strong></span>
+                </div>
+                <div class="dash-sensor-legend-item">
+                  <span class="dash-sensor-dot" style="background:#06b6d4;"></span>
+                  <span>Left Bush: <strong id="leg-val-4">--.- °C</strong></span>
+                </div>
+                <div class="dash-sensor-legend-item">
+                  <span class="dash-sensor-dot" style="background:#8b5cf6;"></span>
+                  <span>Right Bearing: <strong id="leg-val-5">--.- °C</strong></span>
+                </div>
+                <div class="dash-sensor-legend-item">
+                  <span class="dash-sensor-dot" style="background:#ec4899;"></span>
+                  <span>Left Bearing: <strong id="leg-val-6">--.- °C</strong></span>
+                </div>
               </div>
             </section>
 
@@ -680,44 +770,6 @@
                 <span class="mon-live-tag">LIVE</span>
               </div>
 
-              <!-- Sensor Switcher Selector -->
-              <div class="mon-sep"></div>
-              <div class="mon-sensor-select-wrap">
-                <label for="stock-sensor-select" class="mon-select-lbl">Sensor Node:</label>
-                <select id="stock-sensor-select" class="mon-select-sensor" onchange="changeStockSensor(this.value)">
-                  <option value="0" selected>#0 Link Temp</option>
-                  <option value="3">#3 Right Bush</option>
-                  <option value="4">#4 Left Bush</option>
-                  <option value="5">#5 Right Bearing</option>
-                  <option value="6">#6 Left Bearing</option>
-                  <option value="1">#1 Vibration</option>
-                  <option value="all">★ Semua Sensor</option>
-                </select>
-              </div>
-
-              <!-- Sampling Window (1s, 5s, 15s, 1m) -->
-              <div class="mon-sep"></div>
-              <div class="mon-pills-group" id="stock-tf-pills">
-                <button type="button" class="mon-pill-btn" onclick="setStockTimeframe('1s', this)">1s</button>
-                <button type="button" class="mon-pill-btn active" onclick="setStockTimeframe('5s', this)">5s</button>
-                <button type="button" class="mon-pill-btn" onclick="setStockTimeframe('15s', this)">15s</button>
-                <button type="button" class="mon-pill-btn" onclick="setStockTimeframe('1m', this)">1m</button>
-              </div>
-
-              <!-- Visualisasi: Waveform vs Line Stream -->
-              <div class="mon-sep"></div>
-              <div class="mon-pills-group" id="stock-chart-type-pills">
-                <button type="button" class="mon-pill-btn active" onclick="setStockChartType('candle', this)" title="Waveform Sinyal Interval">Waveform</button>
-                <button type="button" class="mon-pill-btn" onclick="setStockChartType('line', this)" title="Garis Tren Stream">Line Stream</button>
-              </div>
-
-              <!-- Filter SMA & Threshold Limit -->
-              <div class="mon-sep"></div>
-              <div class="mon-indicators-group">
-                <button type="button" class="mon-ind-btn active" onclick="toggleStockIndicator('ma7')" id="btn-ind-ma7">SMA (7)</button>
-                <button type="button" class="mon-ind-btn active" onclick="toggleStockIndicator('ma21')" id="btn-ind-ma21">SMA (21)</button>
-                <button type="button" class="mon-ind-btn active" onclick="toggleStockIndicator('limit')" id="btn-ind-limit">Batas 75°C</button>
-              </div>
             </div>
 
             <div class="mon-top-right">
@@ -820,30 +872,12 @@
             <div class="mon-chart-head">
               <div class="mon-chart-title-area">
                 <span class="mon-sensor-badge" id="stock-active-name">Link Temperature (#0)</span>
-                <div class="mon-ohlc-items">
-                  <span>Min: <strong id="stock-stat-low">37.80</strong></span>
-                  <span>Max: <strong id="stock-stat-high">39.40</strong></span>
-                  <span>Live: <strong id="stock-stat-close">38.50</strong></span>
-                  <span>Data: <strong id="stock-stat-vol">2,840 pkt</strong></span>
-                  <span style="display: none;"><strong id="stock-stat-open">38.10</strong></span>
-                </div>
               </div>
             </div>
 
             <!-- Canvas Stack (Latar Putih Bersih) -->
             <div class="mon-canvas-wrap" id="stock-canvas-container">
               <canvas id="canvas-mon-live-chart" height="340"></canvas>
-
-              <!-- Crosshair Hover HUD (Parameter Telemetri Real-Time) -->
-              <div id="stock-crosshair-hud" class="mon-crosshair-hud" style="display: none;">
-                <span class="mhud-time" id="hud-time">--:--:--</span>
-                <span class="mhud-item">Min: <strong id="hud-low">--</strong></span>
-                <span class="mhud-item">Max: <strong id="hud-high">--</strong></span>
-                <span class="mhud-item">Val: <strong id="hud-close">--</strong></span>
-                <span class="mhud-item mhud-ma7" id="hud-ma7-wrap">SMA7: <strong id="hud-ma7">--</strong></span>
-                <span class="mhud-item mhud-ma21" id="hud-ma21-wrap">SMA21: <strong id="hud-ma21">--</strong></span>
-                <span style="display: none;" id="hud-open">--</span>
-              </div>
             </div>
           </div>
 
@@ -1061,64 +1095,867 @@
       </div>
 
       <!-- ======================================================== -->
-      <!-- VIEW: PREVENTIVE MAINTENANCE (PM)                        -->
+      <!-- VIEW 1: DASHBOARD PM & ACCURACY (RINGKASAN EKSEKUTIF)    -->
       <!-- ======================================================== -->
-      <div id="view-pm" class="content-view" style="display: none;">
-        <div class="section-card-panel">
-          <div class="panel-header-row">
-            <div>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <h2 class="section-heading" style="margin:0;">Preventive Maintenance</h2>
-                <span class="pillar-type amber">MAINTENANCE</span>
-              </div>
+      <div id="view-pm-dashboard" class="content-view" style="display: none;">
+        <div class="pm-view-wrap pm-cockpit-layout">
+          
+          <!-- 1. Top Executive Header Strip (Compact) -->
+          <div class="pm-exec-header compact-hdr">
+            <div class="pm-exec-hdr-left">
+              <h2 class="pm-exec-title">Dashboard PM & Accuracy</h2>
             </div>
-            <div class="panel-actions-row">
-              <input type="text" class="input-table-search" id="search-pm" placeholder="Cari Kode PM / Mesin..." oninput="renderPmTable()">
-              <button class="btn-primary-blue" style="background:#d97706;" onclick="showNewPmModal()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                <span>+ Tambah Jadwal</span>
+            <div class="pm-header-actions">
+              <div class="pm-month-select-wrap compact-sel">
+                <span class="pm-month-icon">📅</span>
+                <select class="pm-select-month" id="pm-dash-month-select" onchange="renderPmExecutiveDashboard()">
+                  <option value="2026-10" selected>Oktober 2026 (Aktif)</option>
+                  <option value="2026-09">September 2026</option>
+                  <option value="2026-08">Agustus 2026</option>
+                </select>
+              </div>
+              <button type="button" class="btn-primary-blue compact-btn" style="background:#d97706;" onclick="exportPmExecutiveReport()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>Unduh Laporan</span>
               </button>
             </div>
           </div>
 
-          <!-- Status & KPI Summary Strip -->
-          <div class="tpm-stats-strip" style="margin-bottom: 16px;">
-            <div class="tpm-pill green">Total Agenda: <strong>14</strong></div>
-            <div class="tpm-pill blue">Selesai: <strong>9</strong></div>
-            <div class="tpm-pill amber">Stroke Warning: <strong>2</strong></div>
-            <div class="tpm-pill red">Overdue: <strong>1</strong></div>
+          <!-- 2. Four Core Executive KPI Cards (Ultra-Compact) -->
+          <div class="pm-kpi-grid compact-grid">
+            
+            <!-- Card 1: Ringkasan KPI PM -->
+            <div class="pm-kpi-card compact-card">
+              <div class="pm-kpi-card-head">
+                <span class="pm-kpi-icon-wrap amber compact-ico">📋</span>
+                <div class="pm-kpi-head-text">
+                  <span class="pm-kpi-label">PENCAPAIAN PM</span>
+                  <h4 class="pm-kpi-heading">Ringkasan KPI PM</h4>
+                </div>
+                <span class="pm-badge-success">Target ≥ 95%</span>
+              </div>
+              <div class="pm-kpi-main-val compact-val">
+                <strong class="pm-kpi-number" id="pm-kpi-ach">96.0%</strong>
+                <span class="pm-kpi-subtext">Achievement</span>
+              </div>
+              <div class="pm-progress-track compact-track">
+                <div class="pm-progress-bar bg-amber" id="pm-kpi-prog-bar" style="width: 96%;"></div>
+              </div>
+              <div class="pm-kpi-details-grid compact-subgrid">
+                <div class="pm-kpi-detail-item">
+                  <span class="label">Plan Target</span>
+                  <strong class="val" id="pm-kpi-plan">420</strong>
+                </div>
+                <div class="pm-kpi-detail-item">
+                  <span class="label">Done (Realisasi)</span>
+                  <strong class="val text-green" id="pm-kpi-done">403</strong>
+                </div>
+                <div class="pm-kpi-detail-item">
+                  <span class="label">Overdue</span>
+                  <strong class="val text-red" id="pm-kpi-overdue">17</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 2: Status Kondisi Mesin (Total 90 Unit) -->
+            <div class="pm-kpi-card compact-card">
+              <div class="pm-kpi-card-head">
+                <span class="pm-kpi-icon-wrap blue compact-ico">🏭</span>
+                <div class="pm-kpi-head-text">
+                  <span class="pm-kpi-label">STATUS KONDISI</span>
+                  <h4 class="pm-kpi-heading">Kondisi 90 Mesin</h4>
+                </div>
+                <span class="pm-badge-info">Total 90 Unit</span>
+              </div>
+              <div class="pm-kpi-main-val compact-val">
+                <strong class="pm-kpi-number text-blue" id="mc-stat-total">90</strong>
+                <span class="pm-kpi-subtext">Unit Beroperasi</span>
+              </div>
+              <div class="pm-multi-progress-track compact-track" title="Normal: 80%, Attention: 16%, Abnormal: 4%">
+                <div class="seg bg-green" style="width: 80.0%;"></div>
+                <div class="seg bg-amber" style="width: 16.0%;"></div>
+                <div class="seg bg-red" style="width: 4.0%;"></div>
+              </div>
+              <div class="pm-kpi-details-grid compact-subgrid three-col">
+                <div class="pm-kpi-detail-item text-center">
+                  <span class="label">Normal (80%)</span>
+                  <strong class="val text-green" id="mc-stat-normal">72 Unit</strong>
+                </div>
+                <div class="pm-kpi-detail-item text-center">
+                  <span class="label">Attention (16%)</span>
+                  <strong class="val text-amber" id="mc-stat-attention">14 Unit</strong>
+                </div>
+                <div class="pm-kpi-detail-item text-center">
+                  <span class="label">Abnormal (4%)</span>
+                  <strong class="val text-red" id="mc-stat-abnormal">4 Unit</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 3: Machine Availability & MTBF -->
+            <div class="pm-kpi-card compact-card">
+              <div class="pm-kpi-card-head">
+                <span class="pm-kpi-icon-wrap green compact-ico">⚡</span>
+                <div class="pm-kpi-head-text">
+                  <span class="pm-kpi-label">OPERASIONAL</span>
+                  <h4 class="pm-kpi-heading">Machine Availability</h4>
+                </div>
+                <span class="pm-badge-success">Target ≥ 90%</span>
+              </div>
+              <div class="pm-kpi-main-val compact-val">
+                <strong class="pm-kpi-number text-green" id="kpi-avail-val">94.5%</strong>
+                <span class="pm-kpi-subtext"><span class="text-green" style="font-weight:700;">+4.5%</span> target</span>
+              </div>
+              <div class="pm-progress-track compact-track">
+                <div class="pm-progress-bar bg-green" style="width: 94.5%;"></div>
+              </div>
+              <div class="pm-kpi-details-grid compact-subgrid">
+                <div class="pm-kpi-detail-item">
+                  <span class="label">Target Standar</span>
+                  <strong class="val">≥ 90.0%</strong>
+                </div>
+                <div class="pm-kpi-detail-item">
+                  <span class="label">MTBF Mesin</span>
+                  <strong class="val text-blue">184.2 Jam</strong>
+                </div>
+                <div class="pm-kpi-detail-item">
+                  <span class="label">Downtime</span>
+                  <strong class="val text-red">12.5 Jam</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 4: Ringkasan Accuracy Check -->
+            <div class="pm-kpi-card compact-card">
+              <div class="pm-kpi-card-head">
+                <span class="pm-kpi-icon-wrap purple compact-ico">🎯</span>
+                <div class="pm-kpi-head-text">
+                  <span class="pm-kpi-label">STANDAR KALIBRASI</span>
+                  <h4 class="pm-kpi-heading">Accuracy Check</h4>
+                </div>
+                <span class="pm-badge-purple">Compliance 97%</span>
+              </div>
+              <div class="pm-kpi-main-val compact-val">
+                <strong class="pm-kpi-number text-purple" id="acc-kpi-ach">95.6%</strong>
+                <span class="pm-kpi-subtext">Achievement</span>
+              </div>
+              <div class="pm-progress-track compact-track">
+                <div class="pm-progress-bar bg-purple" style="width: 95.6%;"></div>
+              </div>
+              <div class="pm-kpi-details-grid compact-subgrid">
+                <div class="pm-kpi-detail-item">
+                  <span class="label">Plan Target</span>
+                  <strong class="val">90 Mesin</strong>
+                </div>
+                <div class="pm-kpi-detail-item">
+                  <span class="label">Done (Selesai)</span>
+                  <strong class="val text-green">86 Mesin</strong>
+                </div>
+                <div class="pm-kpi-detail-item">
+                  <span class="label">Not Yet</span>
+                  <strong class="val text-amber">4 Mesin</strong>
+                </div>
+              </div>
+            </div>
+
           </div>
 
-          <!-- Filter Pills -->
-          <div class="approval-tab-pills" style="margin-bottom: 16px;">
-            <button class="pill-tab active" onclick="filterPmView('all', this)">Semua</button>
-            <button class="pill-tab" onclick="filterPmView('stroke', this)">Stroke Jig</button>
-            <button class="pill-tab" onclick="filterPmView('calendar', this)">Kalender</button>
-            <button class="pill-tab" onclick="filterPmView('pending', this)">Menunggu</button>
-            <button class="pill-tab" onclick="filterPmView('completed', this)">Selesai</button>
+          <!-- 3. Executive Charts Row (2 Kolom Compact) -->
+          <div class="pm-charts-two-col compact-charts">
+            
+            <!-- Chart 1: Machine Availability & Breakdown Trend -->
+            <div class="pm-chart-panel compact-panel">
+              <div class="pm-chart-panel-head compact-phead">
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; min-width:0;">
+                  <h3 class="pm-panel-title" style="white-space:nowrap;">Machine Availability & Breakdown Trend</h3>
+                  <span class="chart-badge green" style="white-space:nowrap;">Availability %</span>
+                  <span class="chart-badge red" style="white-space:nowrap;">Breakdown Hours</span>
+                </div>
+                <span class="pm-chart-legend-indicator" style="white-space:nowrap;">Jan - Okt 2026 (Target ≥ 90%)</span>
+              </div>
+              <div class="pm-canvas-container compact-canvas">
+                <canvas id="canvas-pm-avail-trend"></canvas>
+              </div>
+            </div>
+
+            <!-- Chart 2: Distribusi Status Kondisi per Area -->
+            <div class="pm-chart-panel compact-panel">
+              <div class="pm-chart-panel-head compact-phead">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <h3 class="pm-panel-title">Status Kondisi Mesin per Area Produksi</h3>
+                  <span class="chart-badge blue">Total 90 Mesin</span>
+                </div>
+                <span class="pm-chart-legend-indicator">Normal 72 • Attn 14 • Abn 4</span>
+              </div>
+              <div class="pm-canvas-container compact-canvas">
+                <canvas id="canvas-pm-condition-dist"></canvas>
+              </div>
+            </div>
+
           </div>
 
-          <!-- Table Container -->
-          <div class="table-container">
-            <table class="modern-table">
-              <thead>
-                <tr>
-                  <th style="width:110px;">ID Agenda</th>
-                  <th style="width:120px;">Tipe Trigger</th>
-                  <th>Mesin / Jig</th>
-                  <th>Uraian Perawatan</th>
-                  <th>Siklus / Counter</th>
-                  <th style="width:110px;">Target</th>
-                  <th>PIC</th>
-                  <th style="width:110px;">Status</th>
-                  <th style="width:130px; text-align:center;">Checklist</th>
-                </tr>
-              </thead>
-              <tbody id="pm-table-body">
-                <!-- Dynamically populated via app.js -->
-              </tbody>
-            </table>
+          <!-- 4. Kotak Informasi Concern & Improvement (3 Action Cards Ultra-Compact & Visual Chips) -->
+          <div class="pm-concern-section compact-concern">
+            <div class="pm-concern-grid compact-cgrid">
+              
+              <!-- Card A: Abnormality Improvement (PICA) -->
+              <div class="pm-concern-card border-red compact-ccard">
+                <div class="pcc-head compact-chead">
+                  <span class="pcc-icon red">🚨</span>
+                  <div style="flex:1;">
+                    <h4 class="pcc-title">Abnormality (PICA)</h4>
+                  </div>
+                  <span class="pcc-tag-count red">4 Kasus</span>
+                  <button type="button" class="pcc-btn-link text-red compact-link" onclick="switchMainView('pm-abnormality')">
+                    Detail →
+                  </button>
+                </div>
+                <div class="pcc-chips-deck">
+                  <div class="pcc-chip red">
+                    <span class="chip-code">PR-JGD-002</span>
+                    <span class="chip-desc">Bushing 68°C • Seal Leak</span>
+                    <span class="chip-badge red">PICA Aktif</span>
+                  </div>
+                  <div class="pcc-chip red">
+                    <span class="chip-code">MC-HRT-004</span>
+                    <span class="chip-desc">Runout Spindle 0.016mm</span>
+                    <span class="chip-badge red">Re-shim</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card B: Schedule Overhaul -->
+              <div class="pm-concern-card border-amber compact-ccard">
+                <div class="pcc-head compact-chead">
+                  <span class="pcc-icon amber">⚙️</span>
+                  <div style="flex:1;">
+                    <h4 class="pcc-title">Schedule Overhaul</h4>
+                  </div>
+                  <span class="pcc-tag-count amber">2 Proyek</span>
+                  <button type="button" class="pcc-btn-link text-amber compact-link" onclick="switchMainView('pm-overhaul')">
+                    Jadwal →
+                  </button>
+                </div>
+                <div class="pcc-progress-deck">
+                  <div class="pcc-prog-item">
+                    <div class="pcc-prog-meta">
+                      <span class="name">Hartford 1100 #1</span>
+                      <span class="val text-amber">88% (Trial Run)</span>
+                    </div>
+                    <div class="pm-progress-track micro-track">
+                      <div class="pm-progress-bar bg-amber" style="width: 88%;"></div>
+                    </div>
+                  </div>
+                  <div class="pcc-prog-item">
+                    <div class="pcc-prog-meta">
+                      <span class="name">Okuma Lathe #2</span>
+                      <span class="val text-blue">25% (Kitting 94%)</span>
+                    </div>
+                    <div class="pm-progress-track micro-track">
+                      <div class="pm-progress-bar bg-blue" style="width: 25%;"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card C: Sustain & Control -->
+              <div class="pm-concern-card border-green compact-ccard">
+                <div class="pcc-head compact-chead">
+                  <span class="pcc-icon green">🛡️</span>
+                  <div style="flex:1;">
+                    <h4 class="pcc-title">Sustain & Control</h4>
+                  </div>
+                  <span class="pcc-tag-count green">100% OK</span>
+                  <button type="button" class="pcc-btn-link text-green compact-link" onclick="showToast('Standar 5S & Pelumasan Harian berjalan optimal.', 'success')">
+                    SOP →
+                  </button>
+                </div>
+                <div class="pcc-chips-deck">
+                  <div class="pcc-chip green">
+                    <span class="chip-code">Audit 5S</span>
+                    <span class="chip-desc">Skor 98% (Grade A)</span>
+                    <span class="chip-badge green">Verified</span>
+                  </div>
+                  <div class="pcc-chip green">
+                    <span class="chip-code">Pelumasan</span>
+                    <span class="chip-desc">Spindle ISO VG 68</span>
+                    <span class="chip-badge green">100% OK</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
           </div>
+
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 2: PREVENTIVE MAINTENANCE (PM) - JADWAL & EKSEKUSI  -->
+      <!-- ======================================================== -->
+      <div id="view-pm-schedule" class="content-view" style="display: none;">
+        <div class="pm-view-wrap">
+          
+          <!-- Header -->
+          <div class="pm-exec-header">
+            <div>
+              <h2 class="pm-exec-title">Preventive Maintenance (PM) Schedule & Execution</h2>
+              <p class="pm-exec-subtitle">Pemantauan Jadwal Kalender, Evaluasi Area Mesin & Tindak Lanjut Overdue</p>
+            </div>
+            <div class="pm-header-actions">
+              <button type="button" class="btn-primary-blue" style="background:#d97706;" onclick="showNewPmModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>+ Tambah Agenda PM</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Section 1: PM Schedule Calendar (Oktober 2026) -->
+          <div class="pm-card-section">
+            <div class="pm-card-section-head">
+              <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                <div>
+                  <h3 class="pm-section-title">📅 PM Schedule Calendar</h3>
+                  <p class="pm-section-desc">Klik tanggal untuk memantau status dan eksekusi pekerjaan mesin harian</p>
+                </div>
+                <div class="pm-cal-month-nav">
+                  <button type="button" class="cal-nav-btn" onclick="showToast('Navigasi ke September 2026', 'info')">◀</button>
+                  <strong class="cal-month-title">OKTOBER 2026</strong>
+                  <button type="button" class="cal-nav-btn" onclick="showToast('Navigasi ke November 2026', 'info')">▶</button>
+                  <span class="cal-active-tag">Bulan Aktif</span>
+                </div>
+              </div>
+              <div class="pm-calendar-legend">
+                <span class="cal-leg-dot done"></span><span>Done (403)</span>
+                <span class="cal-leg-dot prog"></span><span>In Progress (12)</span>
+                <span class="cal-leg-dot over"></span><span>Overdue (17)</span>
+                <span class="cal-leg-dot plan"></span><span>Plan (420)</span>
+              </div>
+            </div>
+
+            <!-- Calendar Month Grid Container -->
+            <div class="pm-calendar-container" id="pm-calendar-mount">
+              <!-- Dynamically populated via JS -->
+            </div>
+
+            <!-- Interactive Selected Day Inspector -->
+            <div id="pm-calendar-day-detail" class="pm-cal-day-detail-wrap">
+              <!-- Dynamically rendered by selectPmCalendarDay() -->
+            </div>
+          </div>
+
+          <!-- Section 2: PM Achievement by Area / Machine Type Table -->
+          <div class="pm-card-section">
+            <div class="pm-card-section-head">
+              <div>
+                <h3 class="pm-section-title">📊 Evaluasi Pencapaian PM per Jenis Mesin</h3>
+                <p class="pm-section-desc">Tingkat kepatuhan jadwal perawatan rutin berdasarkan kategori mesin di lantai pabrik</p>
+              </div>
+              <span class="pm-badge-corp">Target: 420 Plan | 403 Done (96.0%)</span>
+            </div>
+
+            <div class="table-container">
+              <table class="modern-table">
+                <thead>
+                  <tr>
+                    <th style="width:24%;">Kategori / Jenis Mesin</th>
+                    <th style="width:8%; text-align:center;">Unit</th>
+                    <th style="width:9%; text-align:center;">Plan</th>
+                    <th style="width:9%; text-align:center;">Done</th>
+                    <th style="width:9%; text-align:center;">Overdue</th>
+                    <th style="width:19%;">% Achievement</th>
+                    <th style="width:10%; text-align:center;">Compliance</th>
+                    <th style="width:12%; text-align:center;">Status KPI</th>
+                  </tr>
+                </thead>
+                <tbody id="pm-achievement-type-body">
+                  <!-- Dynamically populated via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Section 3: Overdue PM List (17 Kasus Terlambat) -->
+          <div class="pm-card-section border-red">
+            <div class="pm-card-section-head">
+              <div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span class="chart-badge red">17 Kasus</span>
+                  <h3 class="pm-section-title text-red">⚠️ Overdue PM List (Pekerjaan Terlambat)</h3>
+                </div>
+                <p class="pm-section-desc">Daftar agenda pemeliharaan yang melewati tenggat waktu jatuh tempo</p>
+              </div>
+              <button class="btn-secondary" onclick="exportOverduePmList()">Ekspor Daftar Overdue</button>
+            </div>
+
+            <div class="table-container">
+              <table class="modern-table">
+                <thead>
+                  <tr>
+                    <th style="width:5%; text-align:center;">No</th>
+                    <th style="width:23%;">Mesin & Area</th>
+                    <th style="width:22%;">Item Pekerjaan PM</th>
+                    <th style="width:11%; text-align:center;">Tenggat</th>
+                    <th style="width:11%; text-align:center;">Terlambat</th>
+                    <th style="width:11%;">PIC</th>
+                    <th style="width:11%;">Rencana Tindakan</th>
+                    <th style="width:6%; text-align:center;">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="pm-overdue-table-body">
+                  <!-- Dynamically populated via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Section 4: Machine Condition Monitoring Table (Daftar 90 Unit Mesin) -->
+          <div class="pm-card-section">
+            <div class="pm-card-section-head">
+              <div>
+                <h3 class="pm-section-title">🔍 Machine Condition Monitoring Table (90 Unit Mesin)</h3>
+                <p class="pm-section-desc">Status operasional terkini, riwayat pemeliharaan terakhir, dan jadwal PM mendatang</p>
+              </div>
+              <div class="pm-table-tools-row">
+                <div class="pm-status-filter-pills" id="pm-condition-filter-pills">
+                  <button type="button" class="pm-f-pill active" onclick="filterConditionTable('all', this)">Semua (90)</button>
+                  <button type="button" class="pm-f-pill text-green" onclick="filterConditionTable('normal', this)">Normal (72)</button>
+                  <button type="button" class="pm-f-pill text-amber" onclick="filterConditionTable('attention', this)">Attention (14)</button>
+                  <button type="button" class="pm-f-pill text-red" onclick="filterConditionTable('abnormal', this)">Abnormal (4)</button>
+                </div>
+                <input type="text" class="input-table-search" id="search-machine-condition" placeholder="Cari Kode Mesin / Lini / Remark..." oninput="searchConditionTable()">
+              </div>
+            </div>
+
+            <div class="table-container">
+              <table class="modern-table">
+                <thead>
+                  <tr>
+                    <th style="width:5%; text-align:center;">No</th>
+                    <th style="width:25%;">Kode & Nama Mesin (Area)</th>
+                    <th style="width:12%; text-align:center;">Status</th>
+                    <th style="width:12%; text-align:center;">PM Terakhir</th>
+                    <th style="width:12%; text-align:center;">Jadwal Berikut</th>
+                    <th style="width:11%;">PIC</th>
+                    <th style="width:23%;">Remark / Keterangan</th>
+                  </tr>
+                </thead>
+                <tbody id="pm-condition-table-body">
+                  <!-- Dynamically populated via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 3: MACHINE ACCURACY CHECK (HASIL UKUR & KALIBRASI)  -->
+      <!-- ======================================================== -->
+      <div id="view-pm-accuracy" class="content-view" style="display: none;">
+        <div class="pm-view-wrap">
+          
+          <!-- Header -->
+          <div class="pm-exec-header">
+            <div>
+              <h2 class="pm-exec-title">Machine Accuracy Check</h2>
+              <p class="pm-exec-subtitle">Evaluasi Kalibrasi Geometri Sumbu, Backlash & Runout Spindle (90 Mesin)</p>
+            </div>
+            <div class="pm-header-actions">
+              <button type="button" class="btn-primary-blue" style="background:#7c3aed;" onclick="showInputAccuracyModal()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>+ Input Kalibrasi</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Mini KPI Strip Accuracy -->
+          <div class="pm-accuracy-strip">
+            <div class="pma-pill"><span class="lbl">Plan Target:</span> <strong>90 Unit</strong></div>
+            <div class="pma-pill green"><span class="lbl">Realisasi:</span> <strong>86 Unit (95.6%)</strong></div>
+            <div class="pma-pill red"><span class="lbl">Overdue:</span> <strong>4 Unit</strong></div>
+            <div class="pma-pill purple"><span class="lbl">Compliance:</span> <strong>97.0%</strong></div>
+          </div>
+
+          <!-- Section 1: Accuracy Achievement by Machine Type -->
+          <div class="pm-card-section">
+            <div class="pm-card-section-head">
+              <div>
+                <h3 class="pm-section-title">Pencapaian Akurasi per Kategori Mesin</h3>
+                <p class="pm-section-desc">Realisasi kalibrasi geometris 90 aset mesin pabrik</p>
+              </div>
+            </div>
+
+            <div class="pm-acc-type-grid" id="acc-type-cards-mount">
+              <!-- Dynamically populated via JS -->
+            </div>
+          </div>
+
+          <!-- Section 2: Key Parameter Trend (Grafik Canvas Interaktif) -->
+          <div class="pm-card-section">
+            <div class="pm-card-section-head">
+              <div>
+                <h3 class="pm-section-title">Tren Akurasi vs Standar Toleransi</h3>
+                <p class="pm-section-desc">Grafik riwayat parameter terhadap batas maksimum toleransi (0.008 mm)</p>
+              </div>
+              <div class="pm-chart-selectors-row">
+                <select class="pm-select-box" id="acc-trend-machine-select" onchange="renderAccuracyTrendChart()">
+                  <option value="MC-03">Hartford 1100 #1 (CNC Milling)</option>
+                  <option value="MC-07">Okuma Lathe LB3000 (CNC Lathe)</option>
+                  <option value="MC-11">Nachi Broaching MC-04</option>
+                  <option value="MC-01">Jingduan 630T (Forging Press)</option>
+                </select>
+                <select class="pm-select-box" id="acc-trend-param-select" onchange="renderAccuracyTrendChart()">
+                  <option value="positioning">Positioning Accuracy (mm)</option>
+                  <option value="backlash">Backlash (mm)</option>
+                  <option value="runout">Spindle Runout (mm)</option>
+                  <option value="squareness">Geometric Squareness (mm)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="pm-canvas-container" style="height: 250px;">
+              <canvas id="canvas-accuracy-trend" height="250"></canvas>
+            </div>
+          </div>
+
+          <!-- Section 3: Overdue Accuracy Check List (4 Mesin) -->
+          <div class="pm-card-section border-red">
+            <div class="pm-card-section-head">
+              <div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span class="chart-badge red">4 Unit</span>
+                  <h3 class="pm-section-title text-red">Overdue Accuracy Check List</h3>
+                </div>
+                <p class="pm-section-desc">Mesin prioritas yang membutuhkan kalibrasi ulang geometris</p>
+              </div>
+            </div>
+
+            <div class="table-container">
+              <table class="modern-table">
+                <thead>
+                  <tr>
+                    <th style="width:5%; text-align:center;">No</th>
+                    <th style="width:28%;">Kode & Nama Mesin (Lini)</th>
+                    <th style="width:26%;">Parameter Kritis Melebihi Toleransi</th>
+                    <th style="width:11%; text-align:center;">Cek Terakhir</th>
+                    <th style="width:11%; text-align:center;">Keterlambatan</th>
+                    <th style="width:10%;">PIC</th>
+                    <th style="width:9%; text-align:center;">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="acc-overdue-table-body">
+                  <!-- Dynamically populated via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Section 4: Machine Accuracy Monitoring Table -->
+          <div class="pm-card-section">
+            <div class="pm-card-section-head">
+              <div>
+                <h3 class="pm-section-title">Monitoring Akurasi Mesin (90 Unit)</h3>
+                <p class="pm-section-desc">Hasil pengukuran aktual geometri sumbu dan spindle runout</p>
+              </div>
+              <div class="pm-table-tools-row">
+                <div class="pm-status-filter-pills" id="pm-accuracy-filter-pills">
+                  <button type="button" class="pm-f-pill active" id="filter-acc-all" onclick="filterAccuracyTable('all')">Semua (90)</button>
+                  <button type="button" class="pm-f-pill text-green" id="filter-acc-normal" onclick="filterAccuracyTable('normal')">Normal (72)</button>
+                  <button type="button" class="pm-f-pill text-amber" id="filter-acc-attention" onclick="filterAccuracyTable('attention')">Attention (14)</button>
+                  <button type="button" class="pm-f-pill text-red" id="filter-acc-abnormal" onclick="filterAccuracyTable('abnormal')">Abnormal (4)</button>
+                </div>
+                <input type="text" class="input-table-search" id="search-accuracy-input" placeholder="Cari Kode Mesin / Lini..." oninput="searchAccuracyTable()">
+              </div>
+            </div>
+
+            <div class="table-container">
+              <table class="modern-table">
+                <thead>
+                  <tr>
+                    <th style="width:4%; text-align:center;">No</th>
+                    <th style="width:24%;">Kode & Nama Mesin (Lini)</th>
+                    <th style="width:10%; text-align:right;">Positioning</th>
+                    <th style="width:10%; text-align:right;">Backlash</th>
+                    <th style="width:10%; text-align:right;">Runout</th>
+                    <th style="width:10%; text-align:center;">Status</th>
+                    <th style="width:12%; text-align:center;">Jadwal Cek</th>
+                    <th style="width:11%;">PIC</th>
+                    <th style="width:9%; text-align:center;">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="acc-monitoring-table-body">
+                  <!-- Dynamically populated via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 4: ABNORMALITY & BREAKDOWN (INVESTIGASI & PICA)     -->
+      <!-- ======================================================== -->
+      <div id="view-pm-abnormality" class="content-view" style="display: none;">
+        <div class="pm-view-wrap">
+          
+          <!-- Header -->
+          <div class="pm-exec-header">
+            <div>
+              <h2 class="pm-exec-title">Abnormality & Breakdown Management</h2>
+              <p class="pm-exec-subtitle">Analisis Pareton Isu Dominan, Tren Kasus & Dokumentasi Perbaikan PICA (5-Why)</p>
+            </div>
+            <div class="pm-header-actions">
+              <button type="button" class="btn-primary-blue" style="background:#dc2626;" onclick="showPicaModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>+ Buat Form PICA Baru</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Section 1: Ranking Analisis (2 Kolom Tabel Pareto) -->
+          <div class="pm-charts-two-col">
+            
+            <!-- Left: Top Abnormality Ranking -->
+            <div class="pm-chart-panel">
+              <div class="pm-chart-panel-head">
+                <div>
+                  <span class="chart-badge red">Pareto Masalah Dominan</span>
+                  <h3 class="pm-panel-title">Top Abnormality Ranking (Kerusakan Mesin)</h3>
+                </div>
+              </div>
+              <div class="table-container" style="border:none; box-shadow:none;">
+                <table class="modern-table">
+                  <thead>
+                    <tr>
+                      <th style="width:8%; text-align:center;">#</th>
+                      <th style="width:52%;">Kategori & Masalah Abnormality</th>
+                      <th style="width:16%; text-align:center;">Kasus</th>
+                      <th style="width:24%;">Proporsi %</th>
+                    </tr>
+                  </thead>
+                  <tbody id="top-abnormality-body">
+                    <!-- Dynamically populated via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Right: Top Accuracy Abnormality -->
+            <div class="pm-chart-panel">
+              <div class="pm-chart-panel-head">
+                <div>
+                  <span class="chart-badge purple">Pareto Akurasi</span>
+                  <h3 class="pm-panel-title">Top Accuracy Abnormality (Penyimpangan Presisi)</h3>
+                </div>
+              </div>
+              <div class="table-container" style="border:none; box-shadow:none;">
+                <table class="modern-table">
+                  <thead>
+                    <tr>
+                      <th style="width:8%; text-align:center;">#</th>
+                      <th style="width:52%;">Parameter Isu Akurasi</th>
+                      <th style="width:16%; text-align:center;">Kasus</th>
+                      <th style="width:24%;">Proporsi %</th>
+                    </tr>
+                  </thead>
+                  <tbody id="top-accuracy-abn-body">
+                    <!-- Dynamically populated via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Section 2: Breakdown Trend Analysis (Grafik Canvas) -->
+          <div class="pm-card-section">
+            <div class="pm-card-section-head">
+              <div>
+                <h3 class="pm-section-title">📉 Breakdown Trend Analysis (Kasus & Downtime Bulanan)</h3>
+                <p class="pm-section-desc">Tren frekuensi kerusakan mesin (bar) dan akumulasi jam downtime (garis merah) sepanjang tahun 2026</p>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <span class="chart-badge blue">Kasus Breakdown</span>
+                <span class="chart-badge red">Downtime (Jam)</span>
+              </div>
+            </div>
+
+            <div class="pm-canvas-container" style="height: 260px;">
+              <canvas id="canvas-breakdown-trend" height="260"></canvas>
+            </div>
+          </div>
+
+          <!-- Section 3: Form / Modul PICA (Problem Identification & Corrective Action) -->
+          <div class="pm-card-section">
+            <div class="pm-card-section-head">
+              <div>
+                <h3 class="pm-section-title">📝 Modul PICA (Problem Identification & Corrective Action)</h3>
+                <p class="pm-section-desc">Dokumentasi analisis akar masalah (5-Why Analysis), tindakan korektif dan pencegahan rekurensi</p>
+              </div>
+              <button class="btn-primary-blue" style="background:#dc2626;" onclick="showPicaModal()">+ Buat PICA</button>
+            </div>
+
+            <div class="table-container">
+              <table class="modern-table">
+                <thead>
+                  <tr>
+                    <th style="width:10%;">No. PICA</th>
+                    <th style="width:14%;">Mesin & Area</th>
+                    <th style="width:23%;">Deskripsi Problem</th>
+                    <th style="width:22%;">Akar Masalah (5-Why)</th>
+                    <th style="width:20%;">Tindakan Koreksi</th>
+                    <th style="width:11%; text-align:center;">PIC & Target</th>
+                  </tr>
+                </thead>
+                <tbody id="pica-records-table-body">
+                  <!-- Dynamically populated via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 5: OVERHAUL SCHEDULE (JADWAL & REKONDISI MESIN)     -->
+      <!-- ======================================================== -->
+      <div id="view-pm-overhaul" class="content-view" style="display: none;">
+        <div class="pm-view-wrap">
+          
+          <!-- Header -->
+          <div class="pm-exec-header">
+            <div>
+              <h2 class="pm-exec-title">Overhaul Schedule & Project Tracking</h2>
+              <p class="pm-exec-subtitle">Pelacakan Proyek Rekondisi Total Mesin, Scope of Work, dan Kesiapan Sumber Daya</p>
+            </div>
+            <div class="pm-header-actions">
+              <span class="pm-badge-info" style="font-size:0.85rem; padding:6px 14px;">4 Proyek Terjadwal (2026/2027)</span>
+            </div>
+          </div>
+
+          <!-- Section 1: Overhaul Schedule Table & Scope of Work -->
+          <div class="pm-card-section">
+            <div class="pm-card-section-head">
+              <div>
+                <h3 class="pm-section-title">🛠️ Overhaul Schedule & Scope of Work</h3>
+                <p class="pm-section-desc">Rincian pekerjaan perbaikan total, penggantian komponen utama, dan progress kemajuan proyek</p>
+              </div>
+            </div>
+
+            <div class="table-container">
+              <table class="modern-table">
+                <thead>
+                  <tr>
+                    <th style="width:9%;">ID Proyek</th>
+                    <th style="width:18%;">Mesin & Line</th>
+                    <th style="width:12%;">Jadwal & Periode</th>
+                    <th style="width:25%;">Ruang Lingkup (Scope)</th>
+                    <th style="width:12%; text-align:center;">Progress</th>
+                    <th style="width:10%; text-align:center;">Status</th>
+                    <th style="width:14%;">PIC & Catatan</th>
+                  </tr>
+                </thead>
+                <tbody id="overhaul-schedule-table-body">
+                  <!-- Dynamically populated via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Section 2: Planning & Evaluation Support (4 Pilar Kesiapan) -->
+          <div class="pm-card-section">
+            <div class="pm-card-section-head">
+              <div>
+                <h3 class="pm-section-title">📋 Planning & Evaluation Support (Kesiapan Eksekusi Overhaul)</h3>
+                <p class="pm-section-desc">Checklist kesiapan sumber daya manusia, alat presisi khusus, suku cadang dan uji coba trial run</p>
+              </div>
+            </div>
+
+            <div class="pm-support-grid">
+              
+              <!-- Card 1: Manpower -->
+              <div class="pm-support-card">
+                <div class="psc-head">
+                  <span class="psc-icon">👷</span>
+                  <div>
+                    <h4 class="psc-title">1. Kesiapan Manpower</h4>
+                    <span class="psc-status ready">Siap 100%</span>
+                  </div>
+                </div>
+                <div class="psc-body">
+                  <p>Alokasi tim teknisi bersertifikat dan spesialis mesin:</p>
+                  <ul>
+                    <li><strong>Internal MTM:</strong> 6 Teknisi Mekik & Listrik (Shift Khusus Overhaul).</li>
+                    <li><strong>Vendor Specialist:</strong> 2 Field Engineer dari Hartford & Okuma siap on-site.</li>
+                    <li><strong>Safety Briefing:</strong> JSA & LOTO (Lockout-Tagout) lengkap.</li>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- Card 2: Tools & Rigging -->
+              <div class="pm-support-card">
+                <div class="psc-head">
+                  <span class="psc-icon">🔧</span>
+                  <div>
+                    <h4 class="psc-title">2. Tools & Rigging Support</h4>
+                    <span class="psc-status ready">Terkalibrasi</span>
+                  </div>
+                </div>
+                <div class="psc-body">
+                  <p>Peralatan bongkar pasang & pengukuran presisi:</p>
+                  <ul>
+                    <li><strong>Alat Ukur:</strong> Dial Indicator Mitutoyo 0.001mm, Granite Master Square Grade 00.</li>
+                    <li><strong>Rigging:</strong> Overhead Crane 10T & Hydraulic Puller terinspeksi layak pakai.</li>
+                    <li><strong>Torsi:</strong> Kunci momen digital bersertifikat kalibrasi aktif.</li>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- Card 3: Spare Part Availability -->
+              <div class="pm-support-card">
+                <div class="psc-head">
+                  <span class="psc-icon">📦</span>
+                  <div>
+                    <h4 class="psc-title">3. Ketersediaan Spare Part</h4>
+                    <span class="psc-status warning">94% di Gudang</span>
+                  </div>
+                </div>
+                <div class="psc-body">
+                  <p>Komponen penggantian utama dalam proyek:</p>
+                  <ul>
+                    <li><strong>Spindle Bearing:</strong> NSK Precision Matched Set (Ready Stock).</li>
+                    <li><strong>Ballscrew & Guideway:</strong> THK C3 Preloaded Grade (Ready Stock).</li>
+                    <li><strong>Hydraulic Seal Kit:</strong> NOK Fluororubber (1 kit dalam pengiriman, ETA 2 hari).</li>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- Card 4: Evaluation & Trial Run -->
+              <div class="pm-support-card">
+                <div class="psc-head">
+                  <span class="psc-icon">✅</span>
+                  <div>
+                    <h4 class="psc-title">4. Evaluasi & Trial Run</h4>
+                    <span class="psc-status ready">Prosedur Siap</span>
+                  </div>
+                </div>
+                <div class="psc-body">
+                  <p>Kriteria penerimaan hasil overhaul pasca perakitan:</p>
+                  <ul>
+                    <li><strong>Geometri:</strong> Uji squareness & parallelism tanpa beban &lt; 0.008mm.</li>
+                    <li><strong>Thermal Run:</strong> Uji kontinu 4 jam, kenaikan suhu bearing &lt; 15°C di atas ambient.</li>
+                    <li><strong>Cutting Test:</strong> Pemotongan benda uji presisi dan sign-off resmi Dept QA.</li>
+                  </ul>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -1956,6 +2793,176 @@
     </div>
   </div>
 
-  <script src="app.js?v=2.3.0"></script>
+  <!-- ======================================================== -->
+  <!-- MODAL: FORM PICA (PROBLEM IDENTIFICATION & ACTION)       -->
+  <!-- ======================================================== -->
+  <div id="modal-pica-form" class="modal-backdrop" style="display: none;" onclick="closeModalOnBackdrop(event, 'modal-pica-form')">
+    <div class="modal-dialog" style="max-width: 720px;">
+      <div class="modal-header">
+        <div>
+          <span class="pillar-type red" style="font-size:0.68rem;">ABNORMALITY IMPROVEMENT</span>
+          <h3 class="modal-title" id="pica-modal-title" style="margin:0; font-size:1.15rem;">Form PICA (Problem Identification & Corrective Action)</h3>
+        </div>
+        <button class="modal-btn-close" onclick="closeModal('modal-pica-form')">&times;</button>
+      </div>
+      <form onsubmit="handleSavePica(event)">
+        <div class="modal-body" style="padding: 16px 22px; max-height: calc(85vh - 120px); overflow-y: auto;">
+          <input type="hidden" id="pica-id">
+          
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
+            <div class="form-group">
+              <label class="form-label" for="pica-no">No. PICA</label>
+              <input type="text" class="form-input" id="pica-no" required placeholder="PICA-2026-10-XXX">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="pica-machine">Mesin / Line Terkait</label>
+              <select class="form-input" id="pica-machine" required>
+                <option value="MC-08">MC-08 (Forging Press 630T)</option>
+                <option value="MC-03">MC-03 (Hartford 1100 CNC Milling #1)</option>
+                <option value="MC-12">MC-12 (Okuma Lathe LB3000)</option>
+                <option value="MC-01">MC-01 (Bushing Eksentrik Line)</option>
+                <option value="MC-04">MC-04 (Nachi Broaching)</option>
+                <option value="MC-15">MC-15 (Surface Grinder)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:12px;">
+            <label class="form-label" for="pica-problem">Deskripsi Problem / Gejala Kerusakan</label>
+            <textarea class="form-input" id="pica-problem" rows="2" required placeholder="Jelaskan detail ketidaknormalan mesin, gejala, dan dampak operasional..."></textarea>
+          </div>
+
+          <!-- 5-Why Analysis Accordion / Fields -->
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 14px; margin-bottom:14px;">
+            <strong style="display:block; font-size:0.82rem; color:#1e293b; margin-bottom:8px;">🔍 Analisis Akar Masalah (Root Cause 5-Why)</strong>
+            <div style="display:grid; gap:6px;">
+              <input type="text" class="form-input" id="pica-why1" placeholder="Why 1: Mengapa masalah tersebut terjadi?" style="font-size:0.8rem; padding:6px 10px;">
+              <input type="text" class="form-input" id="pica-why2" placeholder="Why 2: Mengapa..." style="font-size:0.8rem; padding:6px 10px;">
+              <input type="text" class="form-input" id="pica-why3" placeholder="Why 3: Mengapa..." style="font-size:0.8rem; padding:6px 10px;">
+              <input type="text" class="form-input" id="pica-why4" placeholder="Why 4: Mengapa..." style="font-size:0.8rem; padding:6px 10px;">
+              <input type="text" class="form-input" id="pica-why5" placeholder="Why 5 (Akar Masalah Hakiki): ..." style="font-size:0.8rem; padding:6px 10px; font-weight:700; border-color:#cbd5e1;">
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
+            <div class="form-group">
+              <label class="form-label" for="pica-corrective">Tindakan Koreksi Cepat (Corrective Action)</label>
+              <textarea class="form-input" id="pica-corrective" rows="2" required placeholder="Tindakan darurat / perbaikan langsung..."></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="pica-preventive">Tindakan Pencegahan (Preventive Action)</label>
+              <textarea class="form-input" id="pica-preventive" rows="2" required placeholder="Pencegahan agar masalah tidak terulang kembali..."></textarea>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px;">
+            <div class="form-group">
+              <label class="form-label" for="pica-pic">PIC Penanggung Jawab</label>
+              <input type="text" class="form-input" id="pica-pic" required placeholder="Nama Teknisi / Spv">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="pica-due">Target Selesai</label>
+              <input type="date" class="form-input" id="pica-due" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="pica-status">Status PICA</label>
+              <select class="form-input" id="pica-status">
+                <option value="Open">Open</option>
+                <option value="In Progress" selected>In Progress</option>
+                <option value="Verified">Verified</option>
+                <option value="Closed">Closed</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="padding: 12px 22px; border-top:1px solid #e2e8f0; background:#f8fafc; display:flex; justify-content:flex-end; gap:8px;">
+          <button type="button" class="btn-secondary" onclick="closeModal('modal-pica-form')">Batal</button>
+          <button type="submit" class="btn-primary" style="background:#dc2626;">Simpan Dokumen PICA</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: INPUT HASIL AKURASI MESIN                         -->
+  <!-- ======================================================== -->
+  <div id="modal-accuracy-input" class="modal-backdrop" style="display: none;" onclick="closeModalOnBackdrop(event, 'modal-accuracy-input')">
+    <div class="modal-dialog" style="max-width: 540px;">
+      <div class="modal-header">
+        <div>
+          <span class="pillar-type purple" style="font-size:0.68rem;">KALIBRASI MESIN</span>
+          <h3 class="modal-title" style="margin:0; font-size:1.15rem;">Input Hasil Accuracy Check</h3>
+        </div>
+        <button class="modal-btn-close" onclick="closeModal('modal-accuracy-input')">&times;</button>
+      </div>
+      <form onsubmit="handleSaveAccuracyCheck(event)">
+        <div class="modal-body" style="padding: 16px 22px;">
+          <div class="form-group" style="margin-bottom:12px;">
+            <label class="form-label" for="acc-input-machine">Mesin Yang Diuji</label>
+            <select class="form-input" id="acc-input-machine" required>
+              <option value="MC-03">MC-03 - Hartford 1100 CNC Milling #1</option>
+              <option value="MC-07">MC-07 - Okuma Lathe LB3000</option>
+              <option value="MC-11">MC-11 - Nachi Broaching MC-04</option>
+              <option value="MC-01">MC-01 - Jingduan 630T Forging Press</option>
+              <option value="MC-14">MC-14 - Mazak Vertical Center</option>
+              <option value="MC-32">MC-32 - Mori Seiki SL-25</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-bottom:12px;">
+            <label class="form-label" for="acc-input-param">Parameter Akurasi</label>
+            <select class="form-input" id="acc-input-param" required>
+              <option value="Positioning Accuracy X-Axis">Positioning Accuracy X-Axis (mm)</option>
+              <option value="Positioning Accuracy Y-Axis">Positioning Accuracy Y-Axis (mm)</option>
+              <option value="Backlash X-Axis">Backlash X-Axis (mm)</option>
+              <option value="Backlash Y-Axis">Backlash Y-Axis (mm)</option>
+              <option value="Spindle Runout">Spindle Runout (mm)</option>
+              <option value="Table Geometric Squareness">Table Geometric Squareness (mm)</option>
+            </select>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
+            <div class="form-group">
+              <label class="form-label" for="acc-input-tol">Batas Toleransi (Max)</label>
+              <input type="text" class="form-input" id="acc-input-tol" value="± 0.015 mm" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="acc-input-actual">Nilai Aktual Terukur</label>
+              <input type="text" class="form-input" id="acc-input-actual" placeholder="Contoh: 0.009 mm" required>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
+            <div class="form-group">
+              <label class="form-label" for="acc-input-status">Kesimpulan Status</label>
+              <select class="form-input" id="acc-input-status">
+                <option value="Normal">Normal (Sesuai Toleransi)</option>
+                <option value="Attention">Attention (Mendekati Limit)</option>
+                <option value="Abnormal">Abnormal (Melebihi Limit)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="acc-input-pic">PIC Penguji / Kalibrator</label>
+              <input type="text" class="form-input" id="acc-input-pic" value="Budi S. (Metrologi)" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="acc-input-remark">Catatan / Rekomendasi</label>
+            <textarea class="form-input" id="acc-input-remark" rows="2" placeholder="Catatan kondisi geometri dan rekomendasi tindak lanjut..."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="padding: 12px 22px; border-top:1px solid #e2e8f0; background:#f8fafc; display:flex; justify-content:flex-end; gap:8px;">
+          <button type="button" class="btn-secondary" onclick="closeModal('modal-accuracy-input')">Batal</button>
+          <button type="submit" class="btn-primary" style="background:#7c3aed;">Simpan Hasil Pengukuran</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="preventive-maintenance.js?v=2.9.8"></script>
+  <script src="app.js?v=2.9.8"></script>
 </body>
 </html>

@@ -340,6 +340,7 @@ function handleLoginSubmit(e) {
     return;
   }
 
+  localStorage.removeItem("mtm_logged_out");
   performLogin({
     username: username,
     displayName: username.toUpperCase() === "ADMIN" ? "PIC Maintenance" : username,
@@ -375,12 +376,14 @@ function quickLogin(roleType) {
   document.getElementById("input-username").value = user.username;
   document.getElementById("input-password").value = "••••••••";
 
+  localStorage.removeItem("mtm_logged_out");
   performLogin(user);
 }
 
 function performLogin(user, showLoader = true) {
   currentUser = user;
   localStorage.setItem("mtm_user", JSON.stringify(user));
+  localStorage.removeItem("mtm_logged_out");
 
   const roleName = user.displayName === "PIC Maintenance" || user.username?.toUpperCase() === "ADMIN" 
     ? "Administrator" 
@@ -430,14 +433,31 @@ function performLogin(user, showLoader = true) {
     const loginScreen = document.getElementById("login-screen");
     if (loginScreen) loginScreen.style.display = "none";
 
-    const mainApp = document.getElementById("main-app");
-    if (mainApp) mainApp.style.display = "none";
+    // Restore saved screen and view agar saat refresh tetap di posisi terakhir
+    const savedScreen = localStorage.getItem("mtm_screen") || "main-app";
+    const savedModule = localStorage.getItem("mtm_active_module") || "pm";
+    const savedView = localStorage.getItem("mtm_active_view") || (savedModule === "pm" ? "pm-dashboard" : "dashboard");
 
-    const hub = document.getElementById("hub-screen");
-    if (hub) {
-      hub.style.display = "flex";
-      hub.style.opacity = "1";
-      hub.style.visibility = "visible";
+    if (savedScreen === "hub-screen") {
+      const mainApp = document.getElementById("main-app");
+      if (mainApp) mainApp.style.display = "none";
+
+      const hub = document.getElementById("hub-screen");
+      if (hub) {
+        hub.style.display = "flex";
+        hub.style.opacity = "1";
+        hub.style.visibility = "visible";
+      }
+    } else {
+      const hub = document.getElementById("hub-screen");
+      if (hub) hub.style.display = "none";
+
+      const mainApp = document.getElementById("main-app");
+      if (mainApp) mainApp.style.display = "flex";
+
+      currentActiveModule = savedModule;
+      syncSidebarModuleUI();
+      switchMainView(savedView);
     }
 
     // Set user info on hub admin modal
@@ -450,7 +470,9 @@ function performLogin(user, showLoader = true) {
     // Start polling backend telemetry
     startPolling();
 
-    showToast(`Selamat datang, ${roleName}! Silakan pilih modul perawatan.`, "success");
+    if (showLoader) {
+      showToast(`Selamat datang, ${roleName}! Silakan pilih modul perawatan.`, "success");
+    }
   };
 
   if (showLoader) {
@@ -504,6 +526,9 @@ function handleLogout() {
   if (confirm("Apakah Anda yakin ingin keluar dari sistem MTM?")) {
     currentUser = null;
     localStorage.removeItem("mtm_user");
+    localStorage.removeItem("mtm_screen");
+    localStorage.removeItem("mtm_active_view");
+    localStorage.setItem("mtm_logged_out", "true");
     stopPolling();
 
     // Hide any open dropdown
@@ -522,7 +547,14 @@ function handleLogout() {
 }
 
 // Hub Card Launcher Controllers
+let currentActiveModule = "pdm"; // 'pm' | 'pdm'
+
 function enterPredictiveMaintenance() {
+  currentActiveModule = "pdm";
+  localStorage.setItem("mtm_active_module", "pdm");
+  localStorage.setItem("mtm_screen", "main-app");
+  localStorage.setItem("mtm_active_view", "dashboard");
+
   const login = document.getElementById("login-screen");
   if (login) login.style.display = "none";
 
@@ -538,12 +570,90 @@ function enterPredictiveMaintenance() {
   const wrap = document.querySelector(".sidebar-user-wrap");
   if (wrap) wrap.classList.remove("is-open");
 
-  // Default to Dashboard
+  syncSidebarModuleUI();
   switchMainView("dashboard");
   showToast("Membuka Modul Predictive Maintenance", "info");
 }
 
+function enterPreventiveMaintenance() {
+  currentActiveModule = "pm";
+  localStorage.setItem("mtm_active_module", "pm");
+  localStorage.setItem("mtm_screen", "main-app");
+  localStorage.setItem("mtm_active_view", "pm-dashboard");
+
+  const login = document.getElementById("login-screen");
+  if (login) login.style.display = "none";
+
+  const hub = document.getElementById("hub-screen");
+  if (hub) hub.style.display = "none";
+
+  const mainApp = document.getElementById("main-app");
+  if (mainApp) mainApp.style.display = "flex";
+
+  // Hide dropdown if open
+  const ddSide = document.getElementById("sidebar-user-dropdown");
+  if (ddSide) ddSide.style.display = "none";
+  const wrap = document.querySelector(".sidebar-user-wrap");
+  if (wrap) wrap.classList.remove("is-open");
+
+  syncSidebarModuleUI();
+  switchMainView("pm-dashboard");
+  showToast("Membuka Modul Preventive Maintenance (5 Sub-Modul Aktif)", "info");
+}
+
+function syncSidebarModuleUI() {
+  const chipDot = document.getElementById("sidebar-module-dot");
+  const chipName = document.getElementById("sidebar-module-name");
+  const navPm = document.getElementById("sidebar-nav-pm");
+  const navPdm = document.getElementById("sidebar-nav-pdm");
+  const ssbText = document.getElementById("ssb-text");
+  const quickDd = document.getElementById("module-quick-dropdown");
+  if (quickDd) quickDd.style.display = "none";
+
+  if (currentActiveModule === "pm") {
+    if (chipDot) { chipDot.style.background = "#d97706"; chipDot.style.boxShadow = "0 0 6px rgba(217, 119, 6, 0.5)"; }
+    if (chipName) chipName.textContent = "Preventive Maintenance";
+    if (navPm) navPm.style.display = "block";
+    if (navPdm) navPdm.style.display = "none";
+    if (ssbText) ssbText.textContent = "Beralih ke Predictive Maintenance";
+  } else {
+    if (chipDot) { chipDot.style.background = "#2563eb"; chipDot.style.boxShadow = "0 0 6px rgba(37, 99, 235, 0.5)"; }
+    if (chipName) chipName.textContent = "Predictive Maintenance";
+    if (navPm) navPm.style.display = "none";
+    if (navPdm) navPdm.style.display = "block";
+    if (ssbText) ssbText.textContent = "Beralih ke Preventive Maintenance";
+  }
+}
+
+function toggleModuleQuickSwitch() {
+  const dd = document.getElementById("module-quick-dropdown");
+  if (dd) {
+    dd.style.display = dd.style.display === "none" ? "block" : "none";
+  }
+}
+
+function switchActiveModule(mod) {
+  const dd = document.getElementById("module-quick-dropdown");
+  if (dd) dd.style.display = "none";
+
+  if (mod === "pm") {
+    enterPreventiveMaintenance();
+  } else {
+    enterPredictiveMaintenance();
+  }
+}
+
+function toggleActiveModule() {
+  if (currentActiveModule === "pm") {
+    switchActiveModule("pdm");
+  } else {
+    switchActiveModule("pm");
+  }
+}
+
 function returnToHub() {
+  localStorage.setItem("mtm_screen", "hub-screen");
+
   const login = document.getElementById("login-screen");
   if (login) login.style.display = "none";
 
@@ -572,7 +682,7 @@ function handleCmClick() {
 }
 
 function handlePmClick() {
-  showToast("Modul Preventive Maintenance sedang dalam tahap pengembangan.", "info");
+  enterPreventiveMaintenance();
 }
 
 function showSystemInfoModal() {
@@ -648,6 +758,16 @@ function showLoginError(msg) {
 
 function switchMainView(viewName) {
   activeView = viewName;
+  localStorage.setItem("mtm_active_view", viewName);
+  localStorage.setItem("mtm_screen", "main-app");
+  if (viewName.startsWith("pm-")) {
+    currentActiveModule = "pm";
+    localStorage.setItem("mtm_active_module", "pm");
+  } else if (["dashboard", "monitoring", "history"].includes(viewName)) {
+    currentActiveModule = "pdm";
+    localStorage.setItem("mtm_active_module", "pdm");
+  }
+  syncSidebarModuleUI();
 
   document.querySelectorAll(".sidebar-nav .nav-item").forEach(item => {
     item.classList.remove("active");
@@ -656,25 +776,35 @@ function switchMainView(viewName) {
   const targetNav = document.getElementById(`nav-${viewName}`);
   if (targetNav) targetNav.classList.add("active");
 
-  // Sync Topbar Page Title
+  // Sync Topbar Page Title (Modul PM tidak menampilkan judul duplikat di topbar)
   const titles = {
-    dashboard: "DASHBOARD SENSOR (PREDICTIVE MAINTENANCE)",
-    monitoring: "MONITORING REAL-TIME (PREDICTIVE MAINTENANCE)",
-    history: "RIWAYAT DATA MASUK (PREDICTIVE MAINTENANCE)",
+    dashboard: "DASHBOARD SENSOR",
+    monitoring: "MONITORING REAL-TIME",
+    history: "RIWAYAT DATA MASUK",
     tpm: "TPM CONTROL",
     drawing: "DRAWING MESIN",
     jig: "JIG & FIXTURE",
     approval: "APPROVAL QUEUE",
     cm: "CORRECTIVE MAINTENANCE",
     pm: "PREVENTIVE MAINTENANCE",
-    pdm: "PREDICTIVE MAINTENANCE (MPC)"
+    pdm: "PREDICTIVE MAINTENANCE",
+    "pm-dashboard": "",
+    "pm-schedule": "",
+    "pm-accuracy": "",
+    "pm-abnormality": "",
+    "pm-overhaul": ""
   };
   const pageTitleEl = document.getElementById("topbar-page-title");
-  if (pageTitleEl && titles[viewName]) {
-    pageTitleEl.textContent = titles[viewName];
+  if (pageTitleEl) {
+    const titleText = titles[viewName] || "";
+    pageTitleEl.textContent = titleText;
+    pageTitleEl.style.display = titleText ? "inline-block" : "none";
   }
 
-  const allViews = ["dashboard", "drawing", "jig", "monitoring", "history", "tpm", "approval", "cm", "pm", "pdm"];
+  const allViews = [
+    "dashboard", "drawing", "jig", "monitoring", "history", "tpm", "approval", "cm", "pm", "pdm",
+    "pm-dashboard", "pm-schedule", "pm-accuracy", "pm-abnormality", "pm-overhaul"
+  ];
   allViews.forEach(v => {
     const el = document.getElementById(`view-${v}`);
     if (el) {
@@ -682,7 +812,27 @@ function switchMainView(viewName) {
     }
   });
 
-  if (viewName === "dashboard") {
+  const mainScroll = document.querySelector(".main-content-scroll");
+  if (mainScroll) {
+    if (viewName === "pm-dashboard") {
+      mainScroll.classList.add("no-scroll-view");
+      mainScroll.scrollTop = 0;
+    } else {
+      mainScroll.classList.remove("no-scroll-view");
+    }
+  }
+
+  if (viewName === "pm-dashboard") {
+    renderPmExecutiveDashboard();
+  } else if (viewName === "pm-schedule") {
+    renderPmScheduleView();
+  } else if (viewName === "pm-accuracy") {
+    renderPmAccuracyView();
+  } else if (viewName === "pm-abnormality") {
+    renderPmAbnormalityView();
+  } else if (viewName === "pm-overhaul") {
+    renderPmOverhaulView();
+  } else if (viewName === "dashboard") {
     fetchDashboardCharts();
     updatePillarDashboardCounts();
   } else if (viewName === "monitoring") {
@@ -2999,43 +3149,48 @@ const streamSeriesMap = {
   "1": []  // vibration (#1)
 };
 
-// Target nilai sensor terkini (disinkronkan dari MQTT / API backend)
-const latestSensorValues = {
+// Baseline target stabil per-sensor (disinkronkan dari MQTT / API backend)
+const telemetryBaseValues = {
   "0": 38.5,
-  "3": 48.2,
-  "4": 47.1,
-  "5": 44.8,
-  "6": 43.6,
+  "3": 49.2,
+  "4": 48.6,
+  "5": 62.4,
+  "6": 63.1,
   "1": 0.045
 };
 
-// Inisialisasi awal buffer agar grafik langsung terisi penuh dan berjalan sejak detik pertama
+// Target nilai sensor terkini (disinkronkan dari MQTT / API backend)
+const latestSensorValues = {
+  "0": 38.5,
+  "3": 49.2,
+  "4": 48.6,
+  "5": 62.4,
+  "6": 63.1,
+  "1": 0.045
+};
+
+// Inisialisasi awal buffer agar grafik langsung terisi penuh dan bergelombang dinamis sejak detik pertama
 function initStreamBuffers() {
   if (streamInitialized && streamSeriesMap["0"] && streamSeriesMap["0"].length >= STREAM_WINDOW_SIZE) return;
 
   const now = Date.now();
   const stepMs = 1200;
 
-  const baselineMap = {
-    "0": 38.5,
-    "3": 48.2,
-    "4": 47.1,
-    "5": 44.8,
-    "6": 43.6,
-    "1": 0.045
-  };
-
   Object.keys(streamSeriesMap).forEach(id => {
     streamSeriesMap[id] = [];
-    const base = baselineMap[id] || 40.0;
+    const base = telemetryBaseValues[id] || 40.0;
     const isVib = id === "1";
+    const nId = parseInt(id, 10) || 0;
 
     for (let i = STREAM_WINDOW_SIZE - 1; i >= 0; i--) {
       const ptTime = now - i * stepMs;
+      const t = ptTime / 1000;
+      const freq = 0.45;
+      const phase = nId * 1.35;
       const wave = isVib 
-        ? Math.sin(i * 0.4) * 0.012 + (Math.random() - 0.5) * 0.005
-        : Math.sin(i * 0.3 + parseInt(id, 10)) * 1.1 + (Math.random() - 0.5) * 0.35;
-      const val = isVib ? Math.max(0.015, +(base + wave).toFixed(3)) : +(base + wave).toFixed(1);
+        ? Math.sin(t * 1.5) * 0.008 + (Math.random() - 0.5) * 0.003
+        : Math.sin(t * freq + phase) * 2.4 + Math.cos(t * freq * 0.5 + phase) * 0.9 + (Math.random() - 0.5) * 0.35;
+      const val = isVib ? Math.max(0.012, +(base + wave).toFixed(3)) : Math.max(0.0, +(base + wave).toFixed(1));
 
       streamSeriesMap[id].push({
         time: ptTime,
@@ -3051,35 +3206,46 @@ function initStreamBuffers() {
 function ingestReadingIntoStream(deviceId, rawVal) {
   if (rawVal == null) return;
   const devId = getJingduanDeviceId(deviceId);
-  if (devId && latestSensorValues[devId] !== undefined) {
-    latestSensorValues[devId] = Number(rawVal);
+  if (devId && telemetryBaseValues[devId] !== undefined) {
+    const num = Number(rawVal);
+    if (num > 0) {
+      telemetryBaseValues[devId] = num;
+    }
   }
 }
 
-// Detak waktu konstan: membuat grafik terus jalan seiring waktu dan data baru yang masuk
+// Detak waktu konstan: membuat grafik terus jalan seiring waktu dengan kontur naik-turun yang jelas
 function advanceStreamTimeline() {
   initStreamBuffers();
 
   const now = Date.now();
+  const t = now / 1000;
 
   Object.keys(streamSeriesMap).forEach(id => {
     const isVib = id === "1";
-    const targetVal = latestSensorValues[id] ?? (isVib ? 0.045 : 45.0);
-    
-    // Mikro-fluktuasi lembut agar garis sensor terus bergerak dinamis saat streaming
-    const drift = isVib 
-      ? (Math.random() - 0.5) * 0.002
-      : (Math.random() - 0.5) * 0.2;
+    const baseVal = telemetryBaseValues[id] ?? (isVib ? 0.045 : 45.0);
+    const nId = parseInt(id, 10) || 0;
 
-    let nextVal = isVib 
-      ? Math.max(0.01, +(targetVal + drift).toFixed(3))
-      : +(targetVal + drift).toFixed(1);
+    // Gelombang fluktuasi dinamis siklus penekanan forging mesin nyata
+    let wave = 0;
+    if (isVib) {
+      wave = Math.sin(t * 1.5) * 0.008 + (Math.random() - 0.5) * 0.003;
+    } else {
+      // Amplitudo osilasi termal ±2.4°C s/d ±3.3°C
+      const freq = 0.45;
+      const phase = nId * 1.35;
+      wave = Math.sin(t * freq + phase) * 2.4 + Math.cos(t * freq * 0.5 + phase) * 0.9 + (Math.random() - 0.5) * 0.35;
+    }
 
-    latestSensorValues[id] = nextVal;
+    const curVal = isVib 
+      ? Math.max(0.012, +(baseVal + wave).toFixed(3))
+      : Math.max(0.0, +(baseVal + wave).toFixed(1));
+
+    latestSensorValues[id] = curVal;
 
     streamSeriesMap[id].push({
       time: now,
-      val: nextVal
+      val: curVal
     });
 
     if (streamSeriesMap[id].length > STREAM_WINDOW_SIZE) {
@@ -3281,7 +3447,7 @@ function renderTemperatureChart(history, filter) {
   ctx.scale(dpr, dpr);
   ctx.clearRect(0, 0, width, height);
 
-  const pad = { top: 20, right: 30, bottom: 26, left: 36 };
+  const pad = { top: 20, right: 30, bottom: 28, left: 54 };
   const plotW = width - pad.left - pad.right;
   const plotH = height - pad.top - pad.bottom;
 
@@ -3295,10 +3461,11 @@ function renderTemperatureChart(history, filter) {
 
   const activeSensors = sensorConfigs.filter(s => activeFilter === "all" || s.cat === activeFilter);
 
+  // Skala rapi dan stabil: selalu dimulai dari 0°C sampai 80°C
   const minY = 0;
   const maxY = 80;
 
-  // Garis Grid Y
+  // Garis Grid Y Bersih & Rapi
   ctx.strokeStyle = "#eef2f6";
   ctx.lineWidth = 1;
   ctx.fillStyle = "#64748b";
@@ -3330,6 +3497,27 @@ function renderTemperatureChart(history, filter) {
   ctx.font = "bold 9px 'JetBrains Mono', monospace";
   ctx.fillText("75°C LIMIT", width - pad.right - 65, yWarn - 5);
   ctx.restore();
+
+  // Hitung Statistik Real-Time (Min, Avg, Peak) untuk sensor aktif di Dashboard
+  const allActiveVals = [];
+  activeSensors.forEach(cfg => {
+    const points = streamSeriesMap[cfg.id] || [];
+    points.forEach(pt => {
+      if (pt.val != null && !isNaN(pt.val)) {
+        allActiveVals.push(pt.val);
+      }
+    });
+  });
+
+  if (allActiveVals.length > 0) {
+    const minVal = Math.min(...allActiveVals);
+    const maxVal = Math.max(...allActiveVals);
+    const avgVal = allActiveVals.reduce((a, b) => a + b, 0) / allActiveVals.length;
+
+    setText("temp-stat-min", `${fmtNum(minVal, 1)} °C`);
+    setText("temp-stat-avg", `${fmtNum(avgVal, 1)} °C`);
+    setText("temp-stat-peak", `${fmtNum(maxVal, 1)} °C`);
+  }
 
   // Pulse radius untuk animasi denyut beacon data terkini
   const pulseR = 5 + Math.sin(Date.now() / 200) * 2.5;
@@ -3395,7 +3583,7 @@ function renderTemperatureChart(history, filter) {
     ctx.font = "10px 'JetBrains Mono', monospace";
 
     const labelIndices = [0, 7, 14, 21, refSeries.length - 1];
-    labelIndices.forEach(idx => {
+    labelIndices.forEach((idx, i) => {
       if (idx < refSeries.length) {
         const pt = refSeries[idx];
         const xPos = pad.left + (idx / (totalSlots - 1)) * plotW;
@@ -3403,7 +3591,17 @@ function renderTemperatureChart(history, filter) {
         const timeStr = !isNaN(d.getTime()) 
           ? d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) 
           : "";
-        ctx.fillText(timeStr, xPos, height - pad.bottom + 16);
+        
+        if (i === 0) {
+          ctx.textAlign = "left";
+          ctx.fillText(timeStr, pad.left, height - pad.bottom + 18);
+        } else if (i === labelIndices.length - 1) {
+          ctx.textAlign = "right";
+          ctx.fillText(timeStr, width - pad.right, height - pad.bottom + 18);
+        } else {
+          ctx.textAlign = "center";
+          ctx.fillText(timeStr, xPos, height - pad.bottom + 18);
+        }
       }
     });
   }
@@ -3431,7 +3629,7 @@ function renderVibrationChart(history) {
   ctx.scale(dpr, dpr);
   ctx.clearRect(0, 0, width, height);
 
-  const pad = { top: 20, right: 30, bottom: 26, left: 36 };
+  const pad = { top: 20, right: 30, bottom: 28, left: 50 };
   const plotW = width - pad.left - pad.right;
   const plotH = height - pad.top - pad.bottom;
 
@@ -3565,7 +3763,7 @@ function renderVibrationChart(history) {
   ctx.textAlign = "center";
   ctx.font = "10px 'JetBrains Mono', monospace";
   const labelIndices = [0, 7, 14, 21, vibPoints.length - 1];
-  labelIndices.forEach(idx => {
+  labelIndices.forEach((idx, i) => {
     if (idx < vibPoints.length) {
       const pt = vibPoints[idx];
       const xPos = pad.left + (idx / (totalSlots - 1)) * plotW;
@@ -3573,7 +3771,17 @@ function renderVibrationChart(history) {
       const timeStr = !isNaN(d.getTime()) 
         ? d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) 
         : "";
-      ctx.fillText(timeStr, xPos, height - pad.bottom + 16);
+
+      if (i === 0) {
+        ctx.textAlign = "left";
+        ctx.fillText(timeStr, pad.left, height - pad.bottom + 18);
+      } else if (i === labelIndices.length - 1) {
+        ctx.textAlign = "right";
+        ctx.fillText(timeStr, width - pad.right, height - pad.bottom + 18);
+      } else {
+        ctx.textAlign = "center";
+        ctx.fillText(timeStr, xPos, height - pad.bottom + 18);
+      }
     }
   });
 
@@ -3807,17 +4015,11 @@ function updateStockTerminalHeader() {
 
   const tag = document.getElementById("stock-change-tag");
   if (tag) {
-    tag.className = `stock-change-tag ${isUp ? "up" : "down"}`;
+    tag.className = `mon-change-badge ${isUp ? "up" : "down"}`;
     setText("stock-change-symbol", isUp ? "▲" : "▼");
     setText("stock-change-val", `${isUp ? "+" : ""}${totalDelta}`);
     setText("stock-change-pct", `(${isUp ? "+" : ""}${totalPct}%)`);
   }
-
-  setText("stock-stat-open", meta.isVib ? fmtNum(curCandle.open, 3) : fmtNum(curCandle.open, 2));
-  setText("stock-stat-high", meta.isVib ? fmtNum(curCandle.high, 3) : fmtNum(curCandle.high, 2));
-  setText("stock-stat-low", meta.isVib ? fmtNum(curCandle.low, 3) : fmtNum(curCandle.low, 2));
-  setText("stock-stat-close", meta.isVib ? fmtNum(curCandle.close, 3) : fmtNum(curCandle.close, 2));
-  setText("stock-stat-vol", `${curCandle.volume.toLocaleString("id-ID")} pkt`);
 }
 
 // Update Watchlist Chip Bar
@@ -3836,7 +4038,7 @@ function updateStockWatchlistBar() {
     const dirEl = document.getElementById(`watch-dir-${sId}`);
     if (dirEl) {
       dirEl.textContent = isUp ? "▲" : "▼";
-      dirEl.className = `watch-dir ${isUp ? "up" : "down"}`;
+      dirEl.className = `msc-dir watch-dir ${isUp ? "up" : "down"}`;
     }
 
     const chip = document.querySelector(`.stock-watch-chip[data-id="${sId}"], .sb-watch-chip[data-id="${sId}"], .mon-sensor-chip[data-id="${sId}"]`);
@@ -3918,7 +4120,7 @@ function renderStockMainChart() {
   // Tampilkan sejumlah lilin sesuai tingkat zoom (default 35 lilin)
   const candles = allCandles.slice(-stockVisibleCount);
 
-  // 2. Tentukan Rentang Skala Harga Y
+  // 2. Tentukan Rentang Skala Sumbu Y Secara Dinamis (Auto-Scale)
   let minPrice = Infinity;
   let maxPrice = -Infinity;
 
@@ -3927,13 +4129,55 @@ function renderStockMainChart() {
     if (c.high > maxPrice) maxPrice = c.high;
   });
 
-  if (stockIndicators.limit && meta.limit) {
+  // Jika moving average aktif, sertakan nilainya agar tidak keluar batas kanvas
+  if (stockIndicators.ma7) {
+    const ma7s = calcMovingAverage(candles, 7);
+    ma7s.forEach(v => {
+      if (v != null) {
+        if (v < minPrice) minPrice = v;
+        if (v > maxPrice) maxPrice = v;
+      }
+    });
+  }
+  if (stockIndicators.ma21) {
+    const ma21s = calcMovingAverage(candles, 21);
+    ma21s.forEach(v => {
+      if (v != null) {
+        if (v < minPrice) minPrice = v;
+        if (v > maxPrice) maxPrice = v;
+      }
+    });
+  }
+
+  // Fallback jika candles belum siap
+  if (minPrice === Infinity || maxPrice === -Infinity) {
+    minPrice = isVib ? 0.02 : 35.0;
+    maxPrice = isVib ? 0.08 : 55.0;
+  }
+
+  // Hanya sertakan garis limit dalam skala jika data berada di dekat atau melebihi 85% limit
+  if (stockIndicators.limit && meta.limit && maxPrice >= meta.limit * 0.85) {
     if (meta.limit > maxPrice) maxPrice = meta.limit * 1.05;
   }
 
-  const priceMargin = (maxPrice - minPrice) * 0.12 || (isVib ? 0.008 : 1.5);
-  minPrice = Math.max(0, minPrice - priceMargin);
+  const rawSpan = maxPrice - minPrice;
+  const priceMargin = rawSpan > 0 ? rawSpan * 0.18 : (isVib ? 0.005 : 1.2);
+  minPrice = minPrice - priceMargin;
   maxPrice = maxPrice + priceMargin;
+
+  // Pastikan rentang minimal agar grafik lilin/garis tetap proporsional dan tidak flat
+  const minSpan = isVib ? 0.008 : 1.5;
+  if (maxPrice - minPrice < minSpan) {
+    const center = (minPrice + maxPrice) / 2;
+    minPrice = center - minSpan / 2;
+    maxPrice = center + minSpan / 2;
+  }
+
+  // Khusus sensor getaran RMS, nilai fisik tidak boleh negatif
+  if (isVib && minPrice < 0) {
+    minPrice = 0;
+  }
+
   const priceSpan = maxPrice - minPrice || 1;
 
   // 3. Grid Horizontal Halus & Label Sumbu Y Kanan (Warna Putih & Biru Bersih)
@@ -3944,6 +4188,8 @@ function renderStockMainChart() {
   ctx.textAlign = "left";
 
   const numYLines = 6;
+  const numDecimals = isVib ? 3 : (priceSpan < 3 ? 2 : 1);
+
   for (let i = 0; i <= numYLines; i++) {
     const yVal = minPrice + (i / numYLines) * priceSpan;
     const yPos = pad.top + plotH - (i / numYLines) * plotH;
@@ -3953,7 +4199,7 @@ function renderStockMainChart() {
     ctx.lineTo(pad.left + plotW, yPos);
     ctx.stroke();
 
-    const priceText = isVib ? `${fmtNum(yVal, 3)}` : `${fmtNum(yVal, 1)}°`;
+    const priceText = isVib ? `${fmtNum(yVal, numDecimals)}` : `${fmtNum(yVal, numDecimals)}°`;
     ctx.fillText(priceText, pad.left + plotW + 6, yPos + 3.5);
   }
 
@@ -3964,7 +4210,7 @@ function renderStockMainChart() {
   ctx.strokeStyle = "#dbeafe";
   ctx.stroke();
 
-  // 4. Garis Limit Threshold Merah Putus-putus
+  // 4. Garis Limit Threshold Merah Putus-putus (hanya jika dalam rentang pandang)
   if (stockIndicators.limit && meta.limit >= minPrice && meta.limit <= maxPrice) {
     const yLimit = pad.top + plotH - ((meta.limit - minPrice) / priceSpan) * plotH;
     ctx.save();
@@ -3982,7 +4228,7 @@ function renderStockMainChart() {
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 9px 'JetBrains Mono', monospace";
     ctx.textAlign = "left";
-    ctx.fillText(isVib ? "0.08" : "75.0°", pad.left + plotW + 6, yLimit + 3.5);
+    ctx.fillText(isVib ? `${fmtNum(meta.limit, 3)}` : `${meta.limit}°`, pad.left + plotW + 6, yLimit + 3.5);
     ctx.restore();
   }
 
@@ -3998,8 +4244,9 @@ function renderStockMainChart() {
   // 6. Gambar Candlestick / Line Chart
   if (stockChartType === "candle") {
     candles.forEach((c, i) => {
-      const isGreen = c.close >= c.open;
-      const color = isGreen ? "#16a34a" : "#dc2626";
+      // Konvensi Maintenance Mesin: Naik (suhu naik) = Merah, Turun (suhu dingin) = Hijau
+      const isUp = c.close >= c.open;
+      const color = isUp ? "#dc2626" : "#16a34a";
 
       const xCenter = pad.left + (i + 0.5) * slotW;
       const yOpen = pad.top + plotH - ((c.open - minPrice) / priceSpan) * plotH;
@@ -4089,8 +4336,9 @@ function renderStockMainChart() {
   // 8. Dynamic Price Beacon di Lilin Terakhir & Badge Harga Terkini Sumbu Kanan
   const lastC = candles[candles.length - 1];
   if (lastC) {
-    const isGreen = lastC.close >= lastC.open;
-    const tagColor = isGreen ? "#16a34a" : "#dc2626";
+    // Naik = Merah, Turun = Hijau
+    const isUp = lastC.close >= lastC.open;
+    const tagColor = isUp ? "#dc2626" : "#16a34a";
     const lastX = pad.left + (candles.length - 0.5) * slotW;
     const lastY = pad.top + plotH - ((lastC.close - minPrice) / priceSpan) * plotH;
 
@@ -4200,21 +4448,6 @@ function renderStockMainChart() {
       ctx.font = "bold 9px 'JetBrains Mono', monospace";
       ctx.textAlign = "center";
       ctx.fillText(hTime, mx, h - 8);
-
-      const hud = document.getElementById("stock-crosshair-hud");
-      if (hud) {
-        hud.style.display = "flex";
-        setText("hud-time", hTime);
-        setText("hud-open", isVib ? fmtNum(hoveredCandle.open, 3) : fmtNum(hoveredCandle.open, 2));
-        setText("hud-high", isVib ? fmtNum(hoveredCandle.high, 3) : fmtNum(hoveredCandle.high, 2));
-        setText("hud-low", isVib ? fmtNum(hoveredCandle.low, 3) : fmtNum(hoveredCandle.low, 2));
-        setText("hud-close", isVib ? fmtNum(hoveredCandle.close, 3) : fmtNum(hoveredCandle.close, 2));
-
-        const ma7v = ma7Vals[candleIdx];
-        const ma21v = ma21Vals[candleIdx];
-        setText("hud-ma7", ma7v != null ? (isVib ? fmtNum(ma7v, 3) : fmtNum(ma7v, 2)) : "--");
-        setText("hud-ma21", ma21v != null ? (isVib ? fmtNum(ma21v, 3) : fmtNum(ma21v, 2)) : "--");
-      }
     }
 
     ctx.restore();
@@ -4443,7 +4676,8 @@ function renderStockBandarVolumeChart() {
     const barHeight = Math.max(2, (vol / maxVol) * (plotH / 2));
     const xCenter = pad.left + (i + 0.5) * slotW;
 
-    ctx.fillStyle = isUp ? "#16a34a" : "#dc2626";
+    // Gambar Batang Histogram Volume (Merah bila naik, Hijau bila turun)
+    ctx.fillStyle = isUp ? "#dc2626" : "#16a34a";
     if (isUp) {
       ctx.fillRect(xCenter - barW / 2, yCenter - barHeight, barW, barHeight);
     } else {
@@ -4528,8 +4762,6 @@ function attachStockCanvasListeners(canvas) {
 
   canvas.addEventListener("mouseleave", () => {
     stockCrosshairPos = null;
-    const hud = document.getElementById("stock-crosshair-hud");
-    if (hud) hud.style.display = "none";
     renderMonitoringLiveCharts();
   });
 
@@ -5448,14 +5680,31 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Cek apakah pengguna sudah memiliki sesi login tersimpan
-  const savedUser = localStorage.getItem("mtm_user");
-  if (savedUser) {
-    try {
-      const u = JSON.parse(savedUser);
-      performLogin(u, false);
-    } catch (e) {
-      console.warn("Sesi kadaluarsa:", e);
+  const isLoggedOut = localStorage.getItem("mtm_logged_out") === "true";
+  let userToLogin = null;
+
+  if (!isLoggedOut) {
+    const savedUser = localStorage.getItem("mtm_user");
+    if (savedUser) {
+      try {
+        userToLogin = JSON.parse(savedUser);
+      } catch (e) {
+        console.warn("Sesi kadaluarsa/error:", e);
+      }
     }
+    // Jika belum ada data login tersimpan dan tidak sedang logout, gunakan default session
+    if (!userToLogin) {
+      userToLogin = {
+        username: "pic_maintenance",
+        displayName: "PIC Maintenance",
+        role: "Admin / PIC Maintenance"
+      };
+      localStorage.setItem("mtm_user", JSON.stringify(userToLogin));
+    }
+  }
+
+  if (userToLogin) {
+    performLogin(userToLogin, false);
   } else {
     const login = document.getElementById("login-screen");
     if (login) login.style.display = "flex";
