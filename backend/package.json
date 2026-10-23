@@ -6,8 +6,8 @@
   "scripts": {
     "build": "tsc",
     "start": "tsx src/index.ts",
-    "start:dev": "tsx src/index.ts",
-    "dev": "tsx src/index.ts",
+    "start:dev": "tsx watch src/index.ts",
+    "dev": "tsx watch src/index.ts",
     "subscriber": "tsx src/subscriber.ts",
     "simulator": "tsx src/publisherSimulator.ts",
     "start:prod": "node dist/index.js",

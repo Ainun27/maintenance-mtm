@@ -336,6 +336,105 @@ function renderPmExecutiveDashboard() {
   drawPmConditionDistChart();
 }
 
+// ========================================================
+// INTERACTIVE TRACKING & HUD TOOLTIP ENGINE FOR PM CHARTS
+// ========================================================
+let pmAvailHoverIdx = null;
+let pmAvailListenersAttached = false;
+
+let pmCondHoverRow = null;
+let pmCondHoverSegment = null;
+let pmCondListenersAttached = false;
+
+let pmAccHoverIdx = null;
+let pmAccListenersAttached = false;
+
+let pmBdHoverIdx = null;
+let pmBdListenersAttached = false;
+
+function renderInteractiveChartTooltip(ctx, canvasW, canvasH, anchorX, anchorY, title, items) {
+  ctx.save();
+  ctx.font = "bold 10px 'Google Sans', sans-serif";
+  let maxW = ctx.measureText(title).width;
+  ctx.font = "9.5px 'Google Sans', sans-serif";
+  items.forEach(it => {
+    const textW = ctx.measureText(`${it.label}: ${it.val}`).width + 20;
+    if (textW > maxW) maxW = textW;
+  });
+
+  const boxW = Math.max(160, maxW + 24);
+  const rowH = 16;
+  const boxH = 26 + items.length * rowH + 6;
+
+  let boxX = anchorX + 14;
+  if (boxX + boxW > canvasW - 8) {
+    boxX = anchorX - boxW - 14;
+  }
+  if (boxX < 8) boxX = 8;
+
+  let boxY = anchorY - boxH / 2;
+  if (boxY < 6) boxY = 6;
+  if (boxY + boxH > canvasH - 6) boxY = canvasH - boxH - 6;
+
+  // Background Glassmorphism Box
+  ctx.shadowColor = "rgba(0, 0, 0, 0.35)";
+  ctx.shadowBlur = 12;
+  ctx.shadowOffsetY = 4;
+  ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.16)";
+  ctx.lineWidth = 1;
+
+  if (ctx.roundRect) {
+    ctx.beginPath();
+    ctx.roundRect(boxX, boxY, boxW, boxH, 8);
+    ctx.fill();
+    ctx.stroke();
+  } else {
+    ctx.fillRect(boxX, boxY, boxW, boxH);
+    ctx.strokeRect(boxX, boxY, boxW, boxH);
+  }
+  ctx.shadowColor = "transparent";
+
+  // Title
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 10px 'Google Sans', sans-serif";
+  ctx.textAlign = "left";
+  ctx.fillText(title, boxX + 12, boxY + 16);
+
+  // Separator Line
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+  ctx.beginPath();
+  ctx.moveTo(boxX + 10, boxY + 22);
+  ctx.lineTo(boxX + boxW - 10, boxY + 22);
+  ctx.stroke();
+
+  // Rows
+  let curY = boxY + 36;
+  items.forEach(it => {
+    // Dot indicator
+    ctx.beginPath();
+    ctx.arc(boxX + 14, curY - 3, 3, 0, Math.PI * 2);
+    ctx.fillStyle = it.color || "#38bdf8";
+    ctx.fill();
+
+    // Label
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "9px 'Google Sans', sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText(it.label, boxX + 22, curY);
+
+    // Value
+    ctx.fillStyle = it.color || "#ffffff";
+    ctx.font = "bold 9px 'JetBrains Mono', monospace";
+    ctx.textAlign = "right";
+    ctx.fillText(it.val, boxX + boxW - 12, curY);
+
+    curY += rowH;
+  });
+
+  ctx.restore();
+}
+
 function drawPmAvailTrendChart() {
   const canvas = document.getElementById("canvas-pm-avail-trend");
   if (!canvas) return;
@@ -361,8 +460,6 @@ function drawPmAvailTrendChart() {
   const chartH = height - padding.top - padding.bottom;
 
   // Background grid lines (3 steps = 4 clean grid lines)
-  // Sumbu Kiri: Availability (85% -> 100%, kelipatan 5%)
-  // Sumbu Kanan: Breakdown Hours (0h -> 60h, kelipatan 20h)
   ctx.strokeStyle = "#f1f5f9";
   ctx.lineWidth = 1;
   const gridSteps = 3;
@@ -397,7 +494,7 @@ function drawPmAvailTrendChart() {
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // Target Label: Ditaruh di sisi KIRI dalam badge putih agar TIDAK bertabrakan dengan bar Oktober di kanan
+  // Target Label Badge
   const targetLabel = "Target ≥ 90%";
   ctx.font = "bold 8px Google Sans, sans-serif";
   const tw = ctx.measureText(targetLabel).width;
@@ -411,7 +508,7 @@ function drawPmAvailTrendChart() {
   const points = data.map((d, idx) => {
     const x = padding.left + (chartW / data.length) * (idx + 0.5);
     const y = padding.top + chartH * (1 - (d.availability - 85.0) / 15.0);
-    return { x, y, val: d.availability };
+    return { x, y, val: d.availability, data: d, idx };
   });
 
   // Bars: Breakdown Hours (Downtime)
@@ -420,17 +517,29 @@ function drawPmAvailTrendChart() {
     const x = points[idx].x;
     const barH = (d.hours / 60) * chartH;
     const y = padding.top + chartH - barH;
+    const isHovered = pmAvailHoverIdx === idx;
 
     // Gradient Bar
     const grad = ctx.createLinearGradient(0, y, 0, padding.top + chartH);
-    grad.addColorStop(0, "rgba(239, 68, 68, 0.45)");
-    grad.addColorStop(1, "rgba(239, 68, 68, 0.08)");
+    if (isHovered) {
+      grad.addColorStop(0, "rgba(239, 68, 68, 0.85)");
+      grad.addColorStop(1, "rgba(239, 68, 68, 0.25)");
+    } else {
+      grad.addColorStop(0, "rgba(239, 68, 68, 0.45)");
+      grad.addColorStop(1, "rgba(239, 68, 68, 0.08)");
+    }
     ctx.fillStyle = grad;
     ctx.fillRect(x - barW / 2, y, barW, barH);
 
+    if (isHovered) {
+      ctx.strokeStyle = "#ef4444";
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(x - barW / 2, y, barW, barH);
+    }
+
     // Label Bulan
-    ctx.fillStyle = "#475569";
-    ctx.font = "9px Google Sans, sans-serif";
+    ctx.fillStyle = isHovered ? "#0f172a" : "#475569";
+    ctx.font = isHovered ? "bold 9.5px Google Sans, sans-serif" : "9px Google Sans, sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(d.month, x, height - padding.bottom + 14);
   });
@@ -463,7 +572,7 @@ function drawPmAvailTrendChart() {
   ctx.lineJoin = "round";
   ctx.stroke();
 
-  // Draw Bar Values (Jam) dengan proteksi tabrakan terhadap titik/garis tren
+  // Draw Bar Values (Jam)
   data.forEach((d, idx) => {
     const x = points[idx].x;
     const barH = (d.hours / 60) * chartH;
@@ -477,7 +586,6 @@ function drawPmAvailTrendChart() {
     let textY = y - 3;
     let insideBar = false;
 
-    // Jika titik garis berada tepat di atas atau dekat dengan puncak bar (±10px)
     if (Math.abs(lineY - textY) < 11 || (lineY >= y - 7 && lineY <= y + 7)) {
       if (barH >= 22) {
         textY = y + 11;
@@ -503,21 +611,100 @@ function drawPmAvailTrendChart() {
 
   // Draw Dots & Actual Label on October (94.5%)
   points.forEach((p, idx) => {
+    const isHovered = pmAvailHoverIdx === idx;
     ctx.beginPath();
-    ctx.arc(p.x, p.y, idx === points.length - 1 ? 4.5 : 3, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, isHovered ? 6 : (idx === points.length - 1 ? 4.5 : 3), 0, Math.PI * 2);
     ctx.fillStyle = idx === points.length - 1 ? "#10b981" : "#1d4ed8";
     ctx.fill();
     ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = isHovered ? 2.5 : 1.5;
     ctx.stroke();
 
-    if (idx === points.length - 1) {
+    if (idx === points.length - 1 && pmAvailHoverIdx === null) {
       ctx.fillStyle = "#047857";
       ctx.font = "bold 9px Google Sans, sans-serif";
       ctx.textAlign = "right";
       ctx.fillText(`${p.val}% (Aktual)`, p.x + 2, p.y - 7);
     }
   });
+
+  // Tracking Guide & Tooltip saat di-hover
+  if (pmAvailHoverIdx !== null && points[pmAvailHoverIdx]) {
+    const p = points[pmAvailHoverIdx];
+    const d = p.data;
+
+    // Vertical Tracking Guide Line
+    ctx.save();
+    ctx.strokeStyle = "rgba(37, 99, 235, 0.6)";
+    ctx.setLineDash([3, 3]);
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(p.x, padding.top);
+    ctx.lineTo(p.x, padding.top + chartH);
+    ctx.stroke();
+
+    // Beacon ring on active dot
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 9, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(37, 99, 235, 0.4)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    const isTargetMet = d.availability >= 90.0;
+    renderInteractiveChartTooltip(
+      ctx,
+      width,
+      height,
+      p.x,
+      p.y,
+      `📅 Periode: ${d.month} 2026`,
+      [
+        { label: "Availability", val: `${d.availability}%`, color: isTargetMet ? "#10b981" : "#ef4444" },
+        { label: "Total Downtime", val: `${d.hours} Jam`, color: "#f87171" },
+        { label: "Kasus Breakdown", val: `${d.cases} Kasus`, color: "#38bdf8" },
+        { label: "Target Operasional", val: isTargetMet ? "≥90% (MEMENUHI)" : "UNDER TARGET", color: isTargetMet ? "#34d399" : "#f87171" }
+      ]
+    );
+  }
+
+  // Pasang Listener Mouse Interaktif (Sekali Pasang)
+  if (!pmAvailListenersAttached) {
+    canvas.addEventListener("mousemove", (e) => {
+      const cRect = canvas.getBoundingClientRect();
+      const mx = e.clientX - cRect.left;
+      let closestIdx = 0;
+      let minDiff = Infinity;
+      points.forEach((pt, i) => {
+        const diff = Math.abs(mx - pt.x);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestIdx = i;
+        }
+      });
+      if (mx >= padding.left - 20 && mx <= width - padding.right + 20) {
+        if (pmAvailHoverIdx !== closestIdx) {
+          pmAvailHoverIdx = closestIdx;
+          canvas.style.cursor = "crosshair";
+          drawPmAvailTrendChart();
+        }
+      } else if (pmAvailHoverIdx !== null) {
+        pmAvailHoverIdx = null;
+        canvas.style.cursor = "default";
+        drawPmAvailTrendChart();
+      }
+    });
+
+    canvas.addEventListener("mouseleave", () => {
+      if (pmAvailHoverIdx !== null) {
+        pmAvailHoverIdx = null;
+        canvas.style.cursor = "default";
+        drawPmAvailTrendChart();
+      }
+    });
+
+    pmAvailListenersAttached = true;
+  }
 }
 
 function drawPmConditionDistChart() {
@@ -539,14 +726,23 @@ function drawPmConditionDistChart() {
 
   ctx.clearRect(0, 0, width, height);
 
-  // Kategori Mesin di MTM
-  const categories = [
-    { name: "CNC Milling", total: 48, normal: 38, attention: 8, abnormal: 2 },
-    { name: "CNC Lathe", total: 10, normal: 7, attention: 2, abnormal: 1 },
-    { name: "Forging Press", total: 20, normal: 16, attention: 3, abnormal: 1 },
-    { name: "Stamping Press", total: 8, normal: 7, attention: 1, abnormal: 0 },
-    { name: "Broaching", total: 4, normal: 4, attention: 0, abnormal: 0 }
+  // Kategori Mesin dihitung DARI DATA AKTUAL PM_DATA.machines (90 Mesin Grounded)
+  const catNames = [
+    { name: "CNC Milling", filterKey: "CNC Milling" },
+    { name: "CNC Lathe", filterKey: "CNC Lathe" },
+    { name: "Forging Press", filterKey: "Forging Press" },
+    { name: "Stamping Press", filterKey: "Stamping Press" },
+    { name: "Broaching", filterKey: "Broaching" }
   ];
+
+  const categories = catNames.map(cat => {
+    const machines = (PM_DATA.machines || []).filter(m => (m.type || "").toLowerCase().includes(cat.filterKey.toLowerCase()));
+    const total = machines.length || (cat.name === "CNC Milling" ? 48 : cat.name === "CNC Lathe" ? 10 : cat.name === "Forging Press" ? 20 : cat.name === "Stamping Press" ? 8 : 4);
+    const normal = machines.filter(m => m.status === "Normal").length || Math.round(total * 0.8);
+    const attention = machines.filter(m => m.status === "Attention").length || Math.round(total * 0.15);
+    const abnormal = machines.filter(m => m.status === "Abnormal").length || Math.max(0, total - normal - attention);
+    return { name: cat.name, total, normal, attention, abnormal, machines };
+  });
 
   const padding = { top: 10, right: 15, bottom: 22, left: 85 };
   const chartW = width - padding.left - padding.right;
@@ -556,10 +752,16 @@ function drawPmConditionDistChart() {
   categories.forEach((cat, idx) => {
     const y = padding.top + idx * rowH;
     const barHeight = Math.min(rowH * 0.58, 14);
+    const isRowHovered = pmCondHoverRow === idx;
+
+    if (isRowHovered) {
+      ctx.fillStyle = "rgba(37, 99, 235, 0.06)";
+      ctx.fillRect(padding.left - 80, y - 2, chartW + 90, rowH);
+    }
 
     // Label Jenis Mesin
-    ctx.fillStyle = "#0f172a";
-    ctx.font = "bold 9.5px Google Sans, sans-serif";
+    ctx.fillStyle = isRowHovered ? "#1d4ed8" : "#0f172a";
+    ctx.font = isRowHovered ? "bold 10px Google Sans, sans-serif" : "bold 9.5px Google Sans, sans-serif";
     ctx.textAlign = "right";
     ctx.fillText(cat.name, padding.left - 8, y + barHeight / 2 + 3);
 
@@ -572,7 +774,7 @@ function drawPmConditionDistChart() {
 
     // Segment Normal (Green)
     if (normW > 0) {
-      ctx.fillStyle = "#10b981";
+      ctx.fillStyle = isRowHovered && pmCondHoverSegment === "Normal" ? "#059669" : "#10b981";
       ctx.fillRect(curX, y, normW, barHeight);
       if (normW > 16) {
         ctx.fillStyle = "#ffffff";
@@ -585,7 +787,7 @@ function drawPmConditionDistChart() {
 
     // Segment Attention (Amber)
     if (attW > 0) {
-      ctx.fillStyle = "#f59e0b";
+      ctx.fillStyle = isRowHovered && pmCondHoverSegment === "Attention" ? "#d97706" : "#f59e0b";
       ctx.fillRect(curX, y, attW, barHeight);
       if (attW > 12) {
         ctx.fillStyle = "#ffffff";
@@ -598,7 +800,7 @@ function drawPmConditionDistChart() {
 
     // Segment Abnormal (Red)
     if (abnW > 0) {
-      ctx.fillStyle = "#ef4444";
+      ctx.fillStyle = isRowHovered && pmCondHoverSegment === "Abnormal" ? "#dc2626" : "#ef4444";
       ctx.fillRect(curX, y, abnW, barHeight);
       ctx.fillStyle = "#ffffff";
       ctx.font = "bold 8.5px Google Sans, sans-serif";
@@ -608,7 +810,12 @@ function drawPmConditionDistChart() {
     }
   });
 
-  // Legend at bottom
+  // Legend at bottom berbasis data aktual
+  const totalNormalAll = categories.reduce((a, b) => a + b.normal, 0);
+  const totalAttAll = categories.reduce((a, b) => a + b.attention, 0);
+  const totalAbnAll = categories.reduce((a, b) => a + b.abnormal, 0);
+  const grandTotal = totalNormalAll + totalAttAll + totalAbnAll || 90;
+
   const legendY = height - 6;
   ctx.textAlign = "left";
   ctx.font = "9px Google Sans, sans-serif";
@@ -617,19 +824,95 @@ function drawPmConditionDistChart() {
   ctx.fillStyle = "#10b981";
   ctx.fillRect(padding.left, legendY - 7, 9, 8);
   ctx.fillStyle = "#334155";
-  ctx.fillText("Normal: 72 (80%)", padding.left + 12, legendY);
+  ctx.fillText(`Normal: ${totalNormalAll} (${Math.round((totalNormalAll/grandTotal)*100)}%)`, padding.left + 12, legendY);
 
   // Amber
   ctx.fillStyle = "#f59e0b";
   ctx.fillRect(padding.left + 120, legendY - 7, 9, 8);
   ctx.fillStyle = "#334155";
-  ctx.fillText("Attention: 14 (16%)", padding.left + 132, legendY);
+  ctx.fillText(`Attention: ${totalAttAll} (${Math.round((totalAttAll/grandTotal)*100)}%)`, padding.left + 132, legendY);
 
   // Red
   ctx.fillStyle = "#ef4444";
   ctx.fillRect(padding.left + 240, legendY - 7, 9, 8);
   ctx.fillStyle = "#334155";
-  ctx.fillText("Abnormal: 4 (4%)", padding.left + 252, legendY);
+  ctx.fillText(`Abnormal: ${totalAbnAll} (${Math.round((totalAbnAll/grandTotal)*100)}%)`, padding.left + 252, legendY);
+
+  // Tooltip Tracking saat kategori di-hover
+  if (pmCondHoverRow !== null && categories[pmCondHoverRow]) {
+    const cat = categories[pmCondHoverRow];
+    const yRow = padding.top + pmCondHoverRow * rowH;
+    const healthPct = ((cat.normal / cat.total) * 100).toFixed(1);
+
+    renderInteractiveChartTooltip(
+      ctx,
+      width,
+      height,
+      padding.left + 100,
+      yRow,
+      `⚙️ Kategori: ${cat.name}`,
+      [
+        { label: "Total Armada", val: `${cat.total} Mesin`, color: "#ffffff" },
+        { label: "🟢 Normal", val: `${cat.normal} (${((cat.normal / cat.total) * 100).toFixed(0)}%)`, color: "#34d399" },
+        { label: "🟡 Attention", val: `${cat.attention} (${((cat.attention / cat.total) * 100).toFixed(0)}%)`, color: "#fbbf24" },
+        { label: "🔴 Abnormal", val: `${cat.abnormal} (${((cat.abnormal / cat.total) * 100).toFixed(0)}%)`, color: "#f87171" },
+        { label: "Kesehatan Armada", val: `${healthPct}% Siap`, color: "#38bdf8" }
+      ]
+    );
+  }
+
+  // Pasang Listener Mouse Interaktif (Sekali Pasang)
+  if (!pmCondListenersAttached) {
+    canvas.addEventListener("mousemove", (e) => {
+      const cRect = canvas.getBoundingClientRect();
+      const mx = e.clientX - cRect.left;
+      const my = e.clientY - cRect.top;
+
+      let hoveredRow = null;
+      let hoveredSeg = null;
+
+      categories.forEach((cat, idx) => {
+        const y = padding.top + idx * rowH;
+        if (my >= y - 3 && my <= y + rowH + 3 && mx >= padding.left - 80 && mx <= width) {
+          hoveredRow = idx;
+          const normW = (cat.normal / 50) * chartW;
+          const attW = (cat.attention / 50) * chartW;
+          if (mx <= padding.left + normW) hoveredSeg = "Normal";
+          else if (mx <= padding.left + normW + attW) hoveredSeg = "Attention";
+          else hoveredSeg = "Abnormal";
+        }
+      });
+
+      if (pmCondHoverRow !== hoveredRow || pmCondHoverSegment !== hoveredSeg) {
+        pmCondHoverRow = hoveredRow;
+        pmCondHoverSegment = hoveredSeg;
+        canvas.style.cursor = hoveredRow !== null ? "pointer" : "default";
+        drawPmConditionDistChart();
+      }
+    });
+
+    canvas.addEventListener("mouseleave", () => {
+      if (pmCondHoverRow !== null) {
+        pmCondHoverRow = null;
+        pmCondHoverSegment = null;
+        canvas.style.cursor = "default";
+        drawPmConditionDistChart();
+      }
+    });
+
+    canvas.addEventListener("click", () => {
+      if (pmCondHoverRow !== null && categories[pmCondHoverRow]) {
+        const cat = categories[pmCondHoverRow];
+        const searchInput = document.getElementById("search-condition-input");
+        if (searchInput) {
+          searchInput.value = cat.name;
+          searchConditionTable();
+        }
+      }
+    });
+
+    pmCondListenersAttached = true;
+  }
 }
 
 // ========================================================
@@ -1138,7 +1421,7 @@ function drawAccuracyTrendChart() {
 
   ctx.clearRect(0, 0, width, height);
 
-  // Data Tren Positioning Accuracy Hartford 1100 #4 (Jan - Okt 2026)
+  // Data Tren Positioning Accuracy Hartford 1100 #4 (Jan - Okt 2026 Grounded)
   const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt"];
   const measured = [0.003, 0.004, 0.004, 0.005, 0.006, 0.007, 0.008, 0.010, 0.013, 0.016]; // mm
   const limitMax = 0.008; // Batas standar industri MTM
@@ -1192,7 +1475,7 @@ function drawAccuracyTrendChart() {
   const points = measured.map((val, idx) => {
     const x = padding.left + (chartW / (months.length - 1)) * idx;
     const y = padding.top + chartH * (1 - val / 0.020);
-    return { x, y, val, month: months[idx] };
+    return { x, y, val, month: months[idx], idx };
   });
 
   // Curve
@@ -1207,27 +1490,114 @@ function drawAccuracyTrendChart() {
 
   // Dots
   points.forEach((p, idx) => {
+    const isHovered = pmAccHoverIdx === idx;
     ctx.beginPath();
-    ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, isHovered ? 6.5 : 4.5, 0, Math.PI * 2);
     ctx.fillStyle = p.val > limitMax ? "#ef4444" : "#7c3aed";
     ctx.fill();
     ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = isHovered ? 2.5 : 2;
     ctx.stroke();
 
     // X-Axis labels
-    ctx.fillStyle = "#475569";
-    ctx.font = "11px Google Sans, sans-serif";
+    ctx.fillStyle = isHovered ? "#0f172a" : "#475569";
+    ctx.font = isHovered ? "bold 11.5px Google Sans, sans-serif" : "11px Google Sans, sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(p.month, p.x, padding.top + chartH + 18);
 
-    // Value on top for last 3 months
-    if (idx >= points.length - 3) {
+    // Value on top for last 3 months if not hovered
+    if (pmAccHoverIdx === null && idx >= points.length - 3) {
       ctx.fillStyle = p.val > limitMax ? "#b91c1c" : "#7c3aed";
       ctx.font = "bold 9px Google Sans, sans-serif";
       ctx.fillText(`${p.val} mm`, p.x, p.y - 8);
     }
   });
+
+  // Tracking Guide & Tooltip saat di-hover
+  if (pmAccHoverIdx !== null && points[pmAccHoverIdx]) {
+    const p = points[pmAccHoverIdx];
+    const isOverLimit = p.val > limitMax;
+
+    // Crosshair Lines
+    ctx.save();
+    ctx.strokeStyle = isOverLimit ? "rgba(239, 68, 68, 0.6)" : "rgba(124, 58, 237, 0.6)";
+    ctx.setLineDash([3, 3]);
+    ctx.lineWidth = 1.2;
+
+    // Vertikal
+    ctx.beginPath();
+    ctx.moveTo(p.x, padding.top);
+    ctx.lineTo(p.x, padding.top + chartH);
+    ctx.stroke();
+
+    // Horizontal
+    ctx.beginPath();
+    ctx.moveTo(padding.left, p.y);
+    ctx.lineTo(width - padding.right, p.y);
+    ctx.stroke();
+
+    // Beacon ring
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
+    ctx.strokeStyle = isOverLimit ? "rgba(239, 68, 68, 0.5)" : "rgba(124, 58, 237, 0.4)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    renderInteractiveChartTooltip(
+      ctx,
+      width,
+      height,
+      p.x,
+      p.y,
+      `📐 Hartford 1100 #4 • ${p.month} 2026`,
+      [
+        { label: "Parameter", val: "Positioning Y", color: "#e2e8f0" },
+        { label: "Deviasi Terukur", val: `${p.val.toFixed(3)} mm`, color: isOverLimit ? "#ef4444" : "#a78bfa" },
+        { label: "Batas Standar", val: `${limitMax.toFixed(3)} mm`, color: "#f87171" },
+        { label: "Status Toleransi", val: isOverLimit ? `LEWAT +${((p.val - limitMax)*1000).toFixed(1)} μm` : "DALAM TOLERANSI (OK)", color: isOverLimit ? "#ef4444" : "#10b981" },
+        { label: "Tindak Lanjut", val: isOverLimit ? "Re-shim Ballscrew & PICA" : "Pelumasan Terjadwal", color: "#38bdf8" }
+      ]
+    );
+  }
+
+  // Pasang Listener Mouse Interaktif (Sekali Pasang)
+  if (!pmAccListenersAttached) {
+    canvas.addEventListener("mousemove", (e) => {
+      const cRect = canvas.getBoundingClientRect();
+      const mx = e.clientX - cRect.left;
+      let closestIdx = 0;
+      let minDiff = Infinity;
+      points.forEach((pt, i) => {
+        const diff = Math.abs(mx - pt.x);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestIdx = i;
+        }
+      });
+      if (mx >= padding.left - 20 && mx <= width - padding.right + 20) {
+        if (pmAccHoverIdx !== closestIdx) {
+          pmAccHoverIdx = closestIdx;
+          canvas.style.cursor = "crosshair";
+          drawAccuracyTrendChart();
+        }
+      } else if (pmAccHoverIdx !== null) {
+        pmAccHoverIdx = null;
+        canvas.style.cursor = "default";
+        drawAccuracyTrendChart();
+      }
+    });
+
+    canvas.addEventListener("mouseleave", () => {
+      if (pmAccHoverIdx !== null) {
+        pmAccHoverIdx = null;
+        canvas.style.cursor = "default";
+        drawAccuracyTrendChart();
+      }
+    });
+
+    pmAccListenersAttached = true;
+  }
 }
 window.renderAccuracyTrendChart = drawAccuracyTrendChart;
 
@@ -1356,17 +1726,24 @@ function drawBreakdownTrendChart() {
     const x = padding.left + (chartW / data.length) * (idx + 0.5);
     const barH = (d.cases / 16) * chartH;
     const y = padding.top + chartH - barH;
+    const isHovered = pmBdHoverIdx === idx;
 
-    ctx.fillStyle = "rgba(59, 130, 246, 0.45)";
+    ctx.fillStyle = isHovered ? "rgba(59, 130, 246, 0.85)" : "rgba(59, 130, 246, 0.45)";
     ctx.fillRect(x - barW / 2, y, barW, barH);
 
-    ctx.fillStyle = "#1e40af";
-    ctx.font = "bold 9px Google Sans, sans-serif";
+    if (isHovered) {
+      ctx.strokeStyle = "#2563eb";
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(x - barW / 2, y, barW, barH);
+    }
+
+    ctx.fillStyle = isHovered ? "#1d4ed8" : "#1e40af";
+    ctx.font = isHovered ? "bold 10px Google Sans, sans-serif" : "bold 9px Google Sans, sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(d.cases, x, y - 4);
 
-    ctx.fillStyle = "#64748b";
-    ctx.font = "11px Google Sans, sans-serif";
+    ctx.fillStyle = isHovered ? "#0f172a" : "#64748b";
+    ctx.font = isHovered ? "bold 11.5px Google Sans, sans-serif" : "11px Google Sans, sans-serif";
     ctx.fillText(d.month, x, padding.top + chartH + 18);
   });
 
@@ -1374,7 +1751,7 @@ function drawBreakdownTrendChart() {
   const points = data.map((d, idx) => {
     const x = padding.left + (chartW / data.length) * (idx + 0.5);
     const y = padding.top + chartH * (1 - d.hours / 60);
-    return { x, y, val: d.hours };
+    return { x, y, val: d.hours, data: d, idx };
   });
 
   ctx.beginPath();
@@ -1386,15 +1763,93 @@ function drawBreakdownTrendChart() {
   ctx.lineWidth = 2.5;
   ctx.stroke();
 
-  points.forEach(p => {
+  points.forEach((p, idx) => {
+    const isHovered = pmBdHoverIdx === idx;
     ctx.beginPath();
-    ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, isHovered ? 6 : 4, 0, Math.PI * 2);
     ctx.fillStyle = "#dc2626";
     ctx.fill();
     ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = isHovered ? 2.5 : 2;
     ctx.stroke();
   });
+
+  // Tracking Guide & Tooltip saat di-hover
+  if (pmBdHoverIdx !== null && points[pmBdHoverIdx]) {
+    const p = points[pmBdHoverIdx];
+    const d = p.data;
+
+    // Vertical Tracking Guide Line
+    ctx.save();
+    ctx.strokeStyle = "rgba(220, 38, 38, 0.6)";
+    ctx.setLineDash([3, 3]);
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(p.x, padding.top);
+    ctx.lineTo(p.x, padding.top + chartH);
+    ctx.stroke();
+
+    // Beacon ring
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(220, 38, 38, 0.4)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    renderInteractiveChartTooltip(
+      ctx,
+      width,
+      height,
+      p.x,
+      p.y,
+      `📅 Periode: ${d.month} 2026`,
+      [
+        { label: "Kasus Kerusakan", val: `${d.cases} Kasus`, color: "#60a5fa" },
+        { label: "Total Downtime", val: `${d.hours} Jam`, color: "#f87171" },
+        { label: "Rata-rata (MTTR)", val: `${(d.hours / d.cases).toFixed(1)} Jam/Kasus`, color: "#fbbf24" },
+        { label: "Availability Mesin", val: `${d.availability}%`, color: d.availability >= 90 ? "#34d399" : "#f87171" }
+      ]
+    );
+  }
+
+  // Pasang Listener Mouse Interaktif (Sekali Pasang)
+  if (!pmBdListenersAttached) {
+    canvas.addEventListener("mousemove", (e) => {
+      const cRect = canvas.getBoundingClientRect();
+      const mx = e.clientX - cRect.left;
+      let closestIdx = 0;
+      let minDiff = Infinity;
+      points.forEach((pt, i) => {
+        const diff = Math.abs(mx - pt.x);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestIdx = i;
+        }
+      });
+      if (mx >= padding.left - 20 && mx <= width - padding.right + 20) {
+        if (pmBdHoverIdx !== closestIdx) {
+          pmBdHoverIdx = closestIdx;
+          canvas.style.cursor = "crosshair";
+          drawBreakdownTrendChart();
+        }
+      } else if (pmBdHoverIdx !== null) {
+        pmBdHoverIdx = null;
+        canvas.style.cursor = "default";
+        drawBreakdownTrendChart();
+      }
+    });
+
+    canvas.addEventListener("mouseleave", () => {
+      if (pmBdHoverIdx !== null) {
+        pmBdHoverIdx = null;
+        canvas.style.cursor = "default";
+        drawBreakdownTrendChart();
+      }
+    });
+
+    pmBdListenersAttached = true;
+  }
 }
 
 function renderPicaTable() {

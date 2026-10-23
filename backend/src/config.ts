@@ -1,8 +1,18 @@
 import dotenv from "dotenv";
 import path from "path";
+import fs from "fs";
 
-// Muat konfigurasi dari file .env di folder backend atau root
-dotenv.config({ path: path.resolve(__dirname, "../.env") });
+// Muat konfigurasi dari file .env di folder root repository dan folder backend
+const rootEnv = path.resolve(__dirname, "../../.env");
+const backendEnv = path.resolve(__dirname, "../.env");
+
+if (fs.existsSync(rootEnv)) {
+  dotenv.config({ path: rootEnv });
+}
+if (fs.existsSync(backendEnv)) {
+  dotenv.config({ path: backendEnv });
+}
+dotenv.config();
 
 // Sanitasi topic MQTT agar wildcard '#' tidak hilang jika terpotong dotenv
 let rawTopic = (process.env.MQTT_TOPIC || "").trim();

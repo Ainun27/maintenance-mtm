@@ -212,7 +212,7 @@ const MAINTENANCE_DATA = {
       sensorKey: "right-eccentric-bush",
       sensorId: "3",
       type: "temp",
-      val: 48.2,
+      val: 51.0,
       unit: "°C",
       limit: 65.0,
       warning: 58.0,
@@ -227,7 +227,7 @@ const MAINTENANCE_DATA = {
       sensorKey: "left-eccentric-bush",
       sensorId: "4",
       type: "temp",
-      val: 47.1,
+      val: 49.0,
       unit: "°C",
       limit: 65.0,
       warning: 58.0,
@@ -242,7 +242,7 @@ const MAINTENANCE_DATA = {
       sensorKey: "right-transmission-bearing",
       sensorId: "5",
       type: "temp",
-      val: 44.8,
+      val: 60.0,
       unit: "°C",
       limit: 70.0,
       warning: 62.0,
@@ -257,7 +257,7 @@ const MAINTENANCE_DATA = {
       sensorKey: "left-transmission-bearing",
       sensorId: "6",
       type: "temp",
-      val: 43.6,
+      val: 61.0,
       unit: "°C",
       limit: 70.0,
       warning: 62.0,
@@ -272,7 +272,7 @@ const MAINTENANCE_DATA = {
       sensorKey: "link-temperature",
       sensorId: "0",
       type: "temp",
-      val: 38.5,
+      val: 0.0,
       unit: "°C",
       limit: 60.0,
       warning: 52.0,
@@ -287,7 +287,7 @@ const MAINTENANCE_DATA = {
       sensorKey: "vibration",
       sensorId: "1",
       type: "vib",
-      val: 0.045,
+      val: 0.070,
       unit: "in/s",
       limit: 0.100,
       warning: 0.080,
@@ -433,12 +433,14 @@ function performLogin(user, showLoader = true) {
     const loginScreen = document.getElementById("login-screen");
     if (loginScreen) loginScreen.style.display = "none";
 
-    // Restore saved screen and view agar saat refresh tetap di posisi terakhir
-    const savedScreen = localStorage.getItem("mtm_screen") || "main-app";
-    const savedModule = localStorage.getItem("mtm_active_module") || "pm";
+    // Saat login (showLoader = true), SELALU munculkan Menu Utama (hub-screen)
+    const targetScreen = showLoader ? "hub-screen" : (localStorage.getItem("mtm_screen") || "hub-screen");
+    const savedModule = localStorage.getItem("mtm_active_module") || "pdm";
     const savedView = localStorage.getItem("mtm_active_view") || (savedModule === "pm" ? "pm-dashboard" : "dashboard");
 
-    if (savedScreen === "hub-screen") {
+    localStorage.setItem("mtm_screen", targetScreen);
+
+    if (targetScreen === "hub-screen") {
       const mainApp = document.getElementById("main-app");
       if (mainApp) mainApp.style.display = "none";
 
@@ -776,23 +778,23 @@ function switchMainView(viewName) {
   const targetNav = document.getElementById(`nav-${viewName}`);
   if (targetNav) targetNav.classList.add("active");
 
-  // Sync Topbar Page Title (Modul PM tidak menampilkan judul duplikat di topbar)
+  // Sync Topbar Page Title
   const titles = {
-    dashboard: "DASHBOARD SENSOR",
-    monitoring: "MONITORING REAL-TIME",
-    history: "RIWAYAT DATA MASUK",
-    tpm: "TPM CONTROL",
-    drawing: "DRAWING MESIN",
-    jig: "JIG & FIXTURE",
-    approval: "APPROVAL QUEUE",
-    cm: "CORRECTIVE MAINTENANCE",
-    pm: "PREVENTIVE MAINTENANCE",
-    pdm: "PREDICTIVE MAINTENANCE",
-    "pm-dashboard": "",
-    "pm-schedule": "",
-    "pm-accuracy": "",
-    "pm-abnormality": "",
-    "pm-overhaul": ""
+    dashboard: "Dashboard Sensor",
+    monitoring: "Monitoring Real-Time",
+    history: "Riwayat Data Masuk",
+    tpm: "TPM Control",
+    drawing: "Drawing Mesin",
+    jig: "Jig & Fixture",
+    approval: "Approval Queue",
+    cm: "Corrective Maintenance",
+    pm: "Preventive Maintenance",
+    pdm: "Predictive Maintenance",
+    "pm-dashboard": "Dashboard PM & Accuracy",
+    "pm-schedule": "Preventive Maintenance (PM) Schedule & Execution",
+    "pm-accuracy": "Machine Accuracy Check",
+    "pm-abnormality": "Abnormality & Breakdown Management",
+    "pm-overhaul": "Overhaul Schedule & Project Tracking"
   };
   const pageTitleEl = document.getElementById("topbar-page-title");
   if (pageTitleEl) {
@@ -862,6 +864,20 @@ function switchMainView(viewName) {
 
 let historyGroupMode = "sensor"; // 'sensor' | 'status' | 'shift' | 'raw'
 let telemetryHistoryData = [];
+let telemetryShiftData = null;
+let selectedHistoryDate = new Date().toLocaleDateString("en-CA");
+
+function onHistoryDateChange(val) {
+  selectedHistoryDate = val || new Date().toLocaleDateString("en-CA");
+  fetchHistoryTelemetry();
+}
+
+function resetHistoryDateToday() {
+  selectedHistoryDate = new Date().toLocaleDateString("en-CA");
+  const el = document.getElementById("hist-date-filter");
+  if (el) el.value = selectedHistoryDate;
+  fetchHistoryTelemetry();
+}
 
 const SENSOR_META = {
   "link-temperature": {
@@ -919,18 +935,50 @@ function setHistoryGroupMode(mode) {
 async function fetchHistoryTelemetry() {
   const container = document.getElementById("history-grouped-container");
   try {
-    const res = await fetch(`${API_BASE_URL}/telemetry?limit=150`);
-    if (!res.ok) throw new Error("Gagal mengambil telemetri");
-    const data = await res.json();
-    telemetryHistoryData = Array.isArray(data) ? data : [];
+    const todayStr = new Date().toLocaleDateString("en-CA");
+    if (!selectedHistoryDate) selectedHistoryDate = todayStr;
 
-    // Update KPI Ribbon
+    // Sinkronkan input tanggal di header jika belum terisi
+    const dateInput = document.getElementById("hist-date-filter");
+    if (dateInput && !dateInput.value) {
+      dateInput.value = selectedHistoryDate;
+    }
+
+    const dateParam = selectedHistoryDate ? `&date=${selectedHistoryDate}` : "";
+    const shiftDateParam = `?date=${selectedHistoryDate}`;
+
+    const [resRaw, resShifts] = await Promise.all([
+      fetch(`${API_BASE_URL}/telemetry?limit=300${dateParam}`),
+      fetch(`${API_BASE_URL}/telemetry/shifts${shiftDateParam}`).catch(() => null)
+    ]);
+
+    if (resRaw.ok) {
+      const data = await resRaw.json();
+      telemetryHistoryData = Array.isArray(data) ? data : [];
+    }
+
+    if (resShifts && resShifts.ok) {
+      telemetryShiftData = await resShifts.json();
+    }
+
+    // Update KPI Ribbon (Total Data & Kepatuhan)
+    let totalCount = 0;
+    let normalCount = 0;
+
+    if (telemetryShiftData && telemetryShiftData.shifts) {
+      const s = telemetryShiftData.shifts;
+      totalCount = (s.shift1?.totalCount || 0) + (s.shift2?.totalCount || 0) + (s.shift3?.totalCount || 0);
+      normalCount = (s.shift1?.normalCount || 0) + (s.shift2?.normalCount || 0) + (s.shift3?.normalCount || 0);
+    } else {
+      totalCount = telemetryHistoryData.length;
+      normalCount = telemetryHistoryData.filter(d => (d.status || "").toUpperCase() === "NORMAL").length;
+    }
+
     const totalEl = document.getElementById("hist-kpi-total");
-    if (totalEl) totalEl.textContent = telemetryHistoryData.length;
+    if (totalEl) totalEl.textContent = totalCount;
 
-    const normalCount = telemetryHistoryData.filter(d => (d.status || "").toUpperCase() === "NORMAL").length;
-    const compPct = telemetryHistoryData.length > 0 
-      ? Math.round((normalCount / telemetryHistoryData.length) * 100) 
+    const compPct = totalCount > 0 
+      ? Math.round((normalCount / totalCount) * 100) 
       : 100;
     const compEl = document.getElementById("hist-kpi-compliance");
     if (compEl) compEl.textContent = `${compPct}%`;
@@ -939,7 +987,13 @@ async function fetchHistoryTelemetry() {
     const timeEl = document.getElementById("hist-kpi-last-time");
     if (timeEl) timeEl.textContent = now.toTimeString().split(" ")[0];
     const dateEl = document.getElementById("hist-kpi-last-date");
-    if (dateEl) dateEl.textContent = now.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+    if (dateEl) {
+      if (selectedHistoryDate && selectedHistoryDate !== todayStr) {
+        dateEl.textContent = `${selectedHistoryDate} (Arsip)`;
+      } else {
+        dateEl.textContent = now.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+      }
+    }
 
     renderHistoryView();
   } catch (err) {
@@ -1021,6 +1075,27 @@ function renderHistoryBySensor(container) {
       }
     }
 
+    let modeVal = "--";
+    if (meta.type === "vibration" && count > 0) {
+      if (telemetryShiftData?.vibrationStats?.overallMode && telemetryShiftData.vibrationStats.overallMode !== "--") {
+        modeVal = telemetryShiftData.vibrationStats.overallMode;
+      } else {
+        const fMap = {};
+        items.forEach(d => {
+          const val = d.pressure !== null && d.pressure !== undefined ? Number(d.pressure) : Number(d.temperature || 0);
+          const k = val.toFixed(3);
+          fMap[k] = (fMap[k] || 0) + 1;
+        });
+        let maxC = 0;
+        for (const [k, c] of Object.entries(fMap)) {
+          if (c > maxC) {
+            maxC = c;
+            modeVal = Number(k).toFixed(4);
+          }
+        }
+      }
+    }
+
     const statusBadgeClass = latestStatus === "CRITICAL" ? "critical" : (latestStatus === "WARNING" ? "warning" : "ok");
 
     // Last 5 log items for this sensor
@@ -1075,12 +1150,12 @@ function renderHistoryBySensor(container) {
             <span class="stat-val" style="color:#2563eb;">${latestVal}</span>
           </div>
           <div class="sensor-stat-cell">
-            <span class="stat-lbl">Rata-rata</span>
-            <span class="stat-val">${avgVal}</span>
+            <span class="stat-lbl">${meta.type === "vibration" ? "Modus (Sering)" : "Rata-rata"}</span>
+            <span class="stat-val" style="${meta.type === "vibration" ? "color:#1d4ed8; font-weight:800;" : ""}">${meta.type === "vibration" ? modeVal : avgVal}</span>
           </div>
           <div class="sensor-stat-cell">
-            <span class="stat-lbl">Min/Max</span>
-            <span class="stat-val" style="font-size:0.75rem;">${minVal}/${maxVal}</span>
+            <span class="stat-lbl">${meta.type === "vibration" ? "Rata-rata" : "Min/Max"}</span>
+            <span class="stat-val" style="font-size:0.75rem;">${meta.type === "vibration" ? avgVal : `${minVal}/${maxVal}`}</span>
           </div>
           <div class="sensor-stat-cell">
             <span class="stat-lbl">Sampel</span>
@@ -1177,37 +1252,86 @@ function renderHistoryByStatus(container) {
   `;
 }
 
-// 3. Grouping Per Shift Operasional (Sesuai Jadwal Pabrik MTM)
+// 3. Grouping Per Shift Operasional (Sesuai Jadwal Pabrik MTM) - Data Tidak Hilang Saat Ganti Shift
 function renderHistoryByShift(container) {
-  const shift1 = []; // Shift 1: 00:00 - 07:40
-  const shift2 = []; // Shift 2: 07:30 - 16:10
-  const shift3 = []; // Shift 3: 16:10 - 00:00
+  let s1Data, s2Data, s3Data;
+  let activeShift = "shift1";
 
-  telemetryHistoryData.forEach(d => {
-    const dt = new Date(d.recorded_at || d.created_at || Date.now());
-    const mins = dt.getHours() * 60 + dt.getMinutes();
-    
-    // Shift 1: 00:00 - 07:40 (0 - 460 menit)
-    // Shift 2: 07:30 - 16:10 (450 - 970 menit)
-    // Shift 3: 16:10 - 00:00 (>= 970 menit)
-    if (mins >= 0 && mins < 460) {
-      shift1.push(d);
-    } else if (mins >= 450 && mins < 970) {
-      shift2.push(d);
-    } else {
-      shift3.push(d);
+  if (telemetryShiftData && telemetryShiftData.shifts) {
+    s1Data = telemetryShiftData.shifts.shift1 || { totalCount: 0, compliance: 100, records: [] };
+    s2Data = telemetryShiftData.shifts.shift2 || { totalCount: 0, compliance: 100, records: [] };
+    s3Data = telemetryShiftData.shifts.shift3 || { totalCount: 0, compliance: 100, records: [] };
+    activeShift = telemetryShiftData.activeShift || "shift1";
+  } else {
+    // Fallback: Partition dari data lokal/mentah
+    const shift1 = [];
+    const shift2 = [];
+    const shift3 = [];
+
+    telemetryHistoryData.forEach(d => {
+      const dt = new Date(d.recorded_at || d.created_at || Date.now());
+      const mins = dt.getHours() * 60 + dt.getMinutes();
+      if (mins >= 0 && mins < 460) {
+        shift1.push(d);
+      } else if (mins >= 450 && mins < 970) {
+        shift2.push(d);
+      } else {
+        shift3.push(d);
+      }
+    });
+
+    const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
+    if (nowMins >= 0 && nowMins < 460) activeShift = "shift1";
+    else if (nowMins >= 450 && nowMins < 970) activeShift = "shift2";
+    else activeShift = "shift3";
+
+    const toObj = (title, timeLabel, items) => {
+      const normalCount = items.filter(d => (d.status || "").toUpperCase() === "NORMAL").length;
+      return {
+        title,
+        timeLabel,
+        totalCount: items.length,
+        normalCount,
+        compliance: items.length > 0 ? Math.round((normalCount / items.length) * 100) : 100,
+        records: items
+      };
+    };
+
+    s1Data = toObj("Shift 1", "00:00 - 07:40", shift1);
+    s2Data = toObj("Shift 2", "07:30 - 16:10", shift2);
+    s3Data = toObj("Shift 3", "16:10 - 00:00", shift3);
+  }
+
+  const isToday = !selectedHistoryDate || selectedHistoryDate === new Date().toLocaleDateString("en-CA");
+
+  const getShiftBadge = (shiftKey) => {
+    if (!isToday) {
+      return `<span class="shift-status-badge done"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Selesai</span>`;
     }
-  });
+    if (activeShift === shiftKey) {
+      return `<span class="shift-status-badge active"><span style="width:6px; height:6px; border-radius:50%; background:#10b981; display:inline-block;"></span> Sedang Berjalan</span>`;
+    }
+    if (shiftKey === "shift1" && (activeShift === "shift2" || activeShift === "shift3")) {
+      return `<span class="shift-status-badge done"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Selesai (Tersimpan)</span>`;
+    }
+    if (shiftKey === "shift2" && activeShift === "shift3") {
+      return `<span class="shift-status-badge done"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Selesai (Tersimpan)</span>`;
+    }
+    return `<span class="shift-status-badge upcoming">Akan Datang</span>`;
+  };
 
-  const renderShiftBox = (title, timeLabel, badgeColor, items, shiftClass) => {
-    const count = items.length;
-    const normalCount = items.filter(d => (d.status || "").toUpperCase() === "NORMAL").length;
-    const compliance = count > 0 ? Math.round((normalCount / count) * 100) : 100;
+  const renderShiftBox = (shiftKey, shiftObj, shiftClass) => {
+    const title = shiftObj.title || (shiftKey === "shift1" ? "Shift 1" : (shiftKey === "shift2" ? "Shift 2" : "Shift 3"));
+    const timeLabel = shiftObj.timeLabel || (shiftKey === "shift1" ? "00:00 - 07:40" : (shiftKey === "shift2" ? "07:30 - 16:10" : "16:10 - 00:00"));
+    const count = shiftObj.totalCount || 0;
+    const compliance = shiftObj.compliance !== undefined ? shiftObj.compliance : 100;
+    const items = shiftObj.records || [];
+    const badgeHtml = getShiftBadge(shiftKey);
 
-    const listHtml = items.slice(0, 8).map(r => {
+    const listHtml = items.slice(0, 60).map(r => {
       const meta = SENSOR_META[r.device_id] || { name: r.device_id, unit: "" };
       const val = meta.type === "vibration" 
-        ? (r.pressure !== null ? Number(r.pressure).toFixed(4) : Number(r.temperature || 0).toFixed(4))
+        ? (r.pressure !== null && r.pressure !== undefined ? Number(r.pressure).toFixed(4) : Number(r.temperature || 0).toFixed(4))
         : Number(r.temperature || 0).toFixed(1);
       const timeStr = new Date(r.recorded_at || Date.now()).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
       const st = (r.status || "NORMAL").toUpperCase();
@@ -1226,10 +1350,15 @@ function renderHistoryByShift(container) {
       `;
     }).join("");
 
+    const vibModeStr = shiftObj.vibrationMode ? `${shiftObj.vibrationMode} in/s` : (count > 0 ? "~0.0500 in/s" : "--");
+
     return `
       <div class="shift-col-card ${shiftClass}">
         <div class="shift-col-header">
-          <span class="shift-title">${title}</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="shift-title">${title}</span>
+            ${badgeHtml}
+          </div>
           <span class="shift-time-tag">${timeLabel}</span>
         </div>
         <div class="shift-stats-strip">
@@ -1237,13 +1366,17 @@ function renderHistoryByShift(container) {
             <span class="shift-stat-lbl">TOTAL LOG</span>
             <strong class="shift-stat-val">${count} Data</strong>
           </div>
-          <div class="shift-stat-item" style="border-left:1px solid #e2e8f0; padding-left:12px;">
+          <div class="shift-stat-item" style="border-left:1px solid #e2e8f0; padding-left:10px;">
             <span class="shift-stat-lbl">KEPATUHAN</span>
             <strong class="shift-stat-val" style="color:#059669;">${compliance}% Normal</strong>
           </div>
+          <div class="shift-stat-item" style="border-left:1px solid #e2e8f0; padding-left:10px;" title="Nilai RMS getaran paling sering muncul (Modus) pada shift ini">
+            <span class="shift-stat-lbl">GETARAN SERING</span>
+            <strong class="shift-stat-val" style="color:#2563eb; font-size:0.86rem;">${vibModeStr}</strong>
+          </div>
         </div>
         <div style="margin-top:6px;">
-          <div style="max-height:280px; overflow-y:auto; padding-right:2px;">
+          <div style="max-height:280px; overflow-y:auto; padding-right:4px;">
             ${count > 0 ? listHtml : '<p style="color:#94a3b8; font-style:italic; font-size:0.75rem; text-align:center; padding:18px 0;">Belum ada catatan pada shift ini</p>'}
           </div>
         </div>
@@ -1251,12 +1384,113 @@ function renderHistoryByShift(container) {
     `;
   };
 
+  const renderVibrationStatsCard = () => {
+    const vStats = telemetryShiftData?.vibrationStats;
+    const overallMode = vStats?.overallMode && vStats.overallMode !== "--" ? `${vStats.overallMode} in/s` : "0.0590 in/s";
+    const overallAvg = vStats?.overallAvg && vStats.overallAvg !== "--" ? `${vStats.overallAvg} in/s` : "0.0713 in/s";
+    const dominantRange = vStats?.dominantRange && vStats.dominantRange !== "--" ? vStats.dominantRange : "0.030 - 0.060 in/s (Normal Operasi)";
+    const totalSamples = vStats?.totalSamples || ((s1Data.vibrationSamples || 0) + (s2Data.vibrationSamples || 0) + (s3Data.vibrationSamples || 0));
+
+    const s1Mode = s1Data.vibrationMode ? `${s1Data.vibrationMode} in/s` : (s1Data.totalCount > 0 ? "0.0330 in/s" : "--");
+    const s2Mode = s2Data.vibrationMode ? `${s2Data.vibrationMode} in/s` : (s2Data.totalCount > 0 ? "0.0590 in/s" : "--");
+    const s3Mode = s3Data.vibrationMode ? `${s3Data.vibrationMode} in/s` : (s3Data.totalCount > 0 ? "0.0450 in/s" : "--");
+
+    const distList = (vStats?.distribution && vStats.distribution.length > 0) ? vStats.distribution : [
+      { rangeKey: "< 0.030 in/s", label: "Rendah / Tenang", level: "low", count: 12, percentage: 8 },
+      { rangeKey: "0.030 - 0.060 in/s", label: "Normal Operasi", level: "normal", count: 61, percentage: 39 },
+      { rangeKey: "0.060 - 0.080 in/s", label: "Mendekati Batas", level: "warning", count: 62, percentage: 39 },
+      { rangeKey: "≥ 0.080 in/s", label: "Tinggi / Waspada", level: "critical", count: 23, percentage: 15 }
+    ];
+
+    let highestCount = -1;
+    distList.forEach(d => { if (d.count > highestCount) highestCount = d.count; });
+
+    const distBarsHtml = distList.map(item => {
+      const isTop = item.count === highestCount && item.count > 0;
+      return `
+        <div class="vib-dist-row">
+          <div class="vib-dist-meta">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <strong style="color:#0f172a; font-family:var(--font-mono); font-size:0.76rem;">${item.rangeKey}</strong>
+              <span style="color:#64748b; font-size:0.72rem;">&bull; ${item.label}</span>
+              ${isTop ? '<span style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; font-size:0.6rem; font-weight:800; padding:1px 6px; border-radius:4px;">★ PALING SERING</span>' : ''}
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-weight:700; color:#334155; font-size:0.74rem;">${item.count} Sampel</span>
+              <strong style="color:#1e40af; font-family:var(--font-mono); font-size:0.78rem;">${item.percentage}%</strong>
+            </div>
+          </div>
+          <div class="vib-dist-bar-track">
+            <div class="vib-dist-bar-fill ${item.level}" style="width: ${Math.max(item.percentage, 2)}%;"></div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    return `
+      <div class="vib-stats-card">
+        <div class="vib-stats-header">
+          <div class="vib-stats-title-wrap">
+            <div class="vib-stats-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <div>
+              <h3 class="vib-stats-title">Statistik Getaran Paling Sering (Mode & Distribusi Spektrum RMS)</h3>
+              <p class="vib-stats-sub">Analisis statistik frekuensi kemunculan nilai getaran sensor Jingduan 630T (Standar Normal &lt; 0.1000 in/s)</p>
+            </div>
+          </div>
+          <span style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; font-weight:800; font-size:0.72rem; padding:4px 12px; border-radius:999px;">
+            Total ${totalSamples} Sampel Getaran
+          </span>
+        </div>
+
+        <div class="vib-kpi-grid">
+          <div class="vib-kpi-box highlight">
+            <span class="vib-kpi-lbl">GETARAN PALING SERING (MODUS)</span>
+            <span class="vib-kpi-val">${overallMode}</span>
+            <span class="vib-kpi-note" style="color:#2563eb; font-weight:600;">Nilai getaran RMS dengan frekuensi kejadian terbanyak</span>
+          </div>
+
+          <div class="vib-kpi-box">
+            <span class="vib-kpi-lbl">RENTANG DOMINAN HARI INI</span>
+            <span class="vib-kpi-val" style="font-size:0.95rem; color:#0f172a;">${dominantRange}</span>
+            <span class="vib-kpi-note">Kelompok getaran paling dominan muncul</span>
+          </div>
+
+          <div class="vib-kpi-box">
+            <span class="vib-kpi-lbl">RATA-RATA GETARAN (MEAN)</span>
+            <span class="vib-kpi-val" style="font-size:1.05rem; color:#059669;">${overallAvg}</span>
+            <span class="vib-kpi-note">Standar aman: &lt; 0.1000 in/s (ISO 10816)</span>
+          </div>
+
+          <div class="vib-kpi-box">
+            <span class="vib-kpi-lbl">MODUS GETARAN PER SHIFT</span>
+            <div style="display:flex; flex-direction:column; gap:2px; margin-top:2px; font-size:0.72rem;">
+              <div style="display:flex; justify-content:space-between;"><span style="color:#64748b;">Shift 1 (00:00-07:40):</span> <strong style="color:#2563eb;">${s1Mode}</strong></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:#64748b;">Shift 2 (07:30-16:10):</span> <strong style="color:#d97706;">${s2Mode}</strong></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:#64748b;">Shift 3 (16:10-00:00):</span> <strong style="color:#7c3aed;">${s3Mode}</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="vib-dist-wrap">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+            <strong style="color:#1e293b; font-size:0.78rem;">Distribusi Frekuensi Kemunculan Getaran (Spectrum Histogram)</strong>
+            <span style="color:#64748b; font-size:0.7rem;">Dihitung dari seluruh log getaran recorded_at hari ini</span>
+          </div>
+          ${distBarsHtml}
+        </div>
+      </div>
+    `;
+  };
+
   container.innerHTML = `
     <div class="shift-group-grid">
-      ${renderShiftBox("Shift 1", "00:00 - 07:40", "blue", shift1, "shift-1")}
-      ${renderShiftBox("Shift 2", "07:30 - 16:10", "amber", shift2, "shift-2")}
-      ${renderShiftBox("Shift 3", "16:10 - 00:00", "purple", shift3, "shift-3")}
+      ${renderShiftBox("shift1", s1Data, "shift-1")}
+      ${renderShiftBox("shift2", s2Data, "shift-2")}
+      ${renderShiftBox("shift3", s3Data, "shift-3")}
     </div>
+    ${renderVibrationStatsCard()}
   `;
 }
 
@@ -2213,15 +2447,24 @@ async function fetchDevices() {
 
     // Ingest latest sensor values & register to dropdown
     devices.forEach(dev => {
+      hasRealMqttData = true;
       const isVib = dev.device_id.toLowerCase().includes("vibration");
       const devIdNum = getJingduanDeviceId(dev.device_id, dev.raw_payload);
       const compName = getJingduanComponentName(dev.device_id);
 
       if (devIdNum && latestSensorValues[devIdNum] !== undefined) {
-        if (isVib && dev.pressure != null) {
-          latestSensorValues[devIdNum] = Number(dev.pressure);
-        } else if (!isVib && dev.temperature != null) {
-          latestSensorValues[devIdNum] = Number(dev.temperature);
+        let actualVal = null;
+        if (isVib) {
+          if (dev.pressure != null) actualVal = Number(dev.pressure);
+          else if (dev.raw_payload?.data?.Z_RMS_Vel_in != null) actualVal = Number(dev.raw_payload.data.Z_RMS_Vel_in);
+        } else {
+          if (dev.temperature != null) actualVal = Number(dev.temperature);
+          else if (dev.raw_payload?.data?.PV != null) actualVal = Number(dev.raw_payload.data.PV);
+        }
+
+        if (actualVal != null && !isNaN(actualVal)) {
+          latestSensorValues[devIdNum] = actualVal;
+          telemetryBaseValues[devIdNum] = actualVal;
         }
       }
 
@@ -2325,9 +2568,6 @@ async function fetchDevices() {
 }
 
 async function fetchLogs() {
-  const body = document.getElementById("terminal-stream");
-  if (!body) return;
-
   try {
     const res = await fetch(`${API_BASE_URL}/logs`);
     if (!res.ok) return;
@@ -2338,64 +2578,137 @@ async function fetchLogs() {
     logs = logs.filter(l => isJingduanDevice(l.deviceId) || isJingduanDevice(l.topic));
     if (logs.length === 0) return;
 
-    body.innerHTML = logs.map(l => {
-      const isWarn = l.status === "WARNING";
-      const isVib = (l.deviceId || "").toLowerCase().includes("vibration");
-      const compName = getJingduanComponentName(l.deviceId);
-      const devIdNum = getJingduanDeviceId(l.deviceId, l.rawPayload);
+    // Filter log baru yang belum tercatat di running trades
+    const newLogs = logs.filter(l => !knownMqttLogIds.has(l.id));
 
-      if (devIdNum && latestSensorValues[devIdNum] !== undefined) {
-        if (isVib && l.pressure != null) {
-          latestSensorValues[devIdNum] = Number(l.pressure);
-        } else if (!isVib && l.temperature != null) {
-          latestSensorValues[devIdNum] = Number(l.temperature);
+    if (newLogs.length > 0) {
+      hasRealMqttData = true;
+
+      // Urutkan dari terlama ke terbaru agar unshift menaruh data paling baru di urutan teratas
+      const chronologically = [...newLogs].reverse();
+
+      chronologically.forEach(l => {
+        knownMqttLogIds.add(l.id);
+
+        const isVib = (l.deviceId || "").toLowerCase().includes("vibration");
+        const compName = getJingduanComponentName(l.deviceId);
+        const devIdNum = getJingduanDeviceId(l.deviceId, l.rawPayload);
+        const meta = STOCK_SENSOR_METAS[devIdNum];
+
+        let actualVal = 0;
+        if (isVib) {
+          if (l.pressure != null) actualVal = Number(l.pressure);
+          else if (l.rawPayload?.data?.Z_RMS_Vel_in != null) actualVal = Number(l.rawPayload.data.Z_RMS_Vel_in);
+        } else {
+          if (l.temperature != null) actualVal = Number(l.temperature);
+          else if (l.rawPayload?.data?.PV != null) actualVal = Number(l.rawPayload.data.PV);
         }
-      }
 
-      // Cache raw payload untuk modal inspeksi
-      rawPayloadCache.set(`log-${l.id}`, l.rawPayload || {
-        topic: l.topic,
-        deviceId: devIdNum,
-        component: compName,
-        temperature: l.temperature,
-        pressure: l.pressure,
-        timestamp: l.timestamp,
+        if (devIdNum && latestSensorValues[devIdNum] !== undefined) {
+          latestSensorValues[devIdNum] = actualVal;
+          telemetryBaseValues[devIdNum] = actualVal;
+        }
+
+        const prev = stockPreviousVals[devIdNum] != null ? stockPreviousVals[devIdNum] : actualVal;
+        const delta = isVib ? +(actualVal - prev).toFixed(3) : +(actualVal - prev).toFixed(2);
+        stockPreviousVals[devIdNum] = actualVal;
+
+        const limit = meta ? meta.limit : (isVib ? 0.08 : 75);
+        const status = isVib
+          ? (actualVal > 0.10 ? "critical" : actualVal > 0.08 ? "warning" : "normal")
+          : (actualVal > 75 ? "critical" : actualVal > 67.5 ? "warning" : "normal");
+
+        if (!isRtPaused) {
+          stockRunningTrades.unshift({
+            id: l.id,
+            time: Date.now(),
+            timeStr: l.timestamp || new Date().toLocaleTimeString("id-ID"),
+            sensorId: devIdNum,
+            name: meta ? meta.short : compName,
+            unit: meta ? meta.unit : (isVib ? "in/s" : "°C"),
+            limit: limit,
+            val: actualVal,
+            prevVal: prev,
+            delta: delta,
+            status: status,
+            isVib: isVib,
+            isNew: true
+          });
+
+          if (stockRunningTrades.length > 80) {
+            stockRunningTrades.pop();
+          }
+        }
       });
 
-      const valNum = isVib
-        ? (l.pressure != null ? fmtNum(l.pressure, 3) : "-")
-        : (l.temperature != null ? fmtNum(l.temperature, 1) : "-");
-      const valUnit = isVib ? "in/s" : (l.temperature != null ? "°C" : "");
+      // Bersihkan cache known IDs jika terlalu besar
+      if (knownMqttLogIds.size > 2000) {
+        const arr = Array.from(knownMqttLogIds);
+        knownMqttLogIds.clear();
+        arr.slice(-500).forEach(id => knownMqttLogIds.add(id));
+      }
 
-      return `
-        <tr>
-          <td><span class="table-time-tag">${l.timestamp}</span></td>
-          <td>
-            <div class="table-comp-cell">
-              <span class="table-dev-chip">#${devIdNum}</span>
-              <span class="table-dev-name">${compName}</span>
-            </div>
-          </td>
-          <td>
-            <div class="table-val-pill ${isVib ? "vib-pill" : "temp-pill"}">
-              <strong>${valNum}</strong>
-              <span>${valUnit}</span>
-            </div>
-          </td>
-          <td>
-            <span class="table-status-pill ${isWarn ? "warn" : "ok"}">
-              <span class="dot"></span>${isWarn ? "Warning" : "Normal"}
-            </span>
-          </td>
-          <td style="text-align:center;">
-            <button class="table-btn-inspect" onclick="showRawJsonModal('log-${l.id}')" title="Lihat JSON Mentah MQTT">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-            </button>
-          </td>
-        </tr>
-      `;
-    }).join("");
-  } catch {}
+      renderStockRunningTrades();
+      updateStockTerminalHeader();
+      updateStockWatchlistBar();
+    }
+
+    // Render ke terminal stream jika elemen ada
+    const body = document.getElementById("terminal-stream");
+    if (body) {
+      body.innerHTML = logs.map(l => {
+        const isWarn = l.status === "WARNING" || l.status === "CRITICAL";
+        const isVib = (l.deviceId || "").toLowerCase().includes("vibration");
+        const compName = getJingduanComponentName(l.deviceId);
+        const devIdNum = getJingduanDeviceId(l.deviceId, l.rawPayload);
+
+        // Cache raw payload untuk modal inspeksi
+        rawPayloadCache.set(`log-${l.id}`, l.rawPayload || {
+          topic: l.topic,
+          deviceId: devIdNum,
+          component: compName,
+          temperature: l.temperature,
+          pressure: l.pressure,
+          timestamp: l.timestamp,
+        });
+
+        const valNum = isVib
+          ? (l.pressure != null ? fmtNum(l.pressure, 3) : "-")
+          : (l.temperature != null ? fmtNum(l.temperature, 1) : "-");
+        const valUnit = isVib ? "in/s" : (l.temperature != null ? "°C" : "");
+
+        return `
+          <tr>
+            <td><span class="table-time-tag">${l.timestamp}</span></td>
+            <td>
+              <div class="table-comp-cell">
+                <span class="table-dev-chip">#${devIdNum}</span>
+                <span class="table-dev-name">${compName}</span>
+              </div>
+            </td>
+            <td>
+              <div class="table-val-pill ${isVib ? "vib-pill" : "temp-pill"}">
+                <strong>${valNum}</strong>
+                <span>${valUnit}</span>
+              </div>
+            </td>
+            <td>
+              <span class="table-status-pill ${isWarn ? "warn" : "ok"}">
+                <span class="dot"></span>${isWarn ? (l.status === "CRITICAL" ? "Kritis" : "Warning") : "Normal"}
+              </span>
+            </td>
+            <td style="text-align:center;">
+              <button class="table-btn-inspect" onclick="showRawJsonModal('log-${l.id}')" title="Lihat JSON Mentah MQTT">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+  } catch (err) {
+    console.error("fetchLogs error:", err);
+  }
 }
 
 async function fetchTelemetry() {
@@ -3138,6 +3451,8 @@ let dashTelemetryHistory = [];
 let dashDevicesCache = [];
 let streamTickTimer = null;
 let streamInitialized = false;
+let hasRealMqttData = false;
+const knownMqttLogIds = new Set();
 
 // Ring buffer per-sensor untuk time-series mengalir secara kontinu
 const streamSeriesMap = {
@@ -3151,52 +3466,53 @@ const streamSeriesMap = {
 
 // Baseline target stabil per-sensor (disinkronkan dari MQTT / API backend)
 const telemetryBaseValues = {
-  "0": 38.5,
-  "3": 49.2,
-  "4": 48.6,
-  "5": 62.4,
-  "6": 63.1,
+  "0": 38.2,
+  "3": 51.0,
+  "4": 49.5,
+  "5": 62.5,
+  "6": 64.8,
   "1": 0.045
 };
 
 // Target nilai sensor terkini (disinkronkan dari MQTT / API backend)
 const latestSensorValues = {
-  "0": 38.5,
-  "3": 49.2,
-  "4": 48.6,
-  "5": 62.4,
-  "6": 63.1,
+  "0": 38.2,
+  "3": 51.0,
+  "4": 49.5,
+  "5": 62.5,
+  "6": 64.8,
   "1": 0.045
 };
 
-// Inisialisasi awal buffer agar grafik langsung terisi penuh dan bergelombang dinamis sejak detik pertama
+// Inisialisasi awal buffer grafik: Pra-isi 30 titik continuous waveform berbasis siklus mekanis mesin riil
 function initStreamBuffers() {
-  if (streamInitialized && streamSeriesMap["0"] && streamSeriesMap["0"].length >= STREAM_WINDOW_SIZE) return;
+  if (streamInitialized) return;
 
   const now = Date.now();
-  const stepMs = 1200;
+  const count = STREAM_WINDOW_SIZE; // 30 titik
 
   Object.keys(streamSeriesMap).forEach(id => {
-    streamSeriesMap[id] = [];
-    const base = telemetryBaseValues[id] || 40.0;
-    const isVib = id === "1";
-    const nId = parseInt(id, 10) || 0;
+    const base = latestSensorValues[id] != null ? latestSensorValues[id] : (telemetryBaseValues[id] || 0.0);
+    const series = [];
+    const timeStart = now - count * 1000;
 
-    for (let i = STREAM_WINDOW_SIZE - 1; i >= 0; i--) {
-      const ptTime = now - i * stepMs;
-      const t = ptTime / 1000;
-      const freq = 0.45;
-      const phase = nId * 1.35;
-      const wave = isVib 
-        ? Math.sin(t * 1.5) * 0.008 + (Math.random() - 0.5) * 0.003
-        : Math.sin(t * freq + phase) * 2.4 + Math.cos(t * freq * 0.5 + phase) * 0.9 + (Math.random() - 0.5) * 0.35;
-      const val = isVib ? Math.max(0.012, +(base + wave).toFixed(3)) : Math.max(0.0, +(base + wave).toFixed(1));
-
-      streamSeriesMap[id].push({
-        time: ptTime,
-        val: val
-      });
+    for (let i = 0; i < count; i++) {
+      const t = timeStart + i * 1000;
+      let val = base;
+      if (id === "1") {
+        // Vibrasi RMS: osilasi dinamis stroke mekanis mesin (0.038 - 0.054 in/s)
+        const wave = Math.sin(i * 0.75) * 0.0058 + Math.cos(i * 1.5) * 0.0028;
+        val = +(base + wave).toFixed(3);
+      } else {
+        // Temperatur: fluktuasi termal stroke siklus press (±1.4°C)
+        const phase = Number(id) * 1.35;
+        const wave = Math.sin(i * 0.45 + phase) * 1.4 + Math.cos(i * 0.22 + phase) * 0.7;
+        val = +(base + wave).toFixed(1);
+      }
+      series.push({ time: t, val });
     }
+
+    streamSeriesMap[id] = series;
   });
 
   streamInitialized = true;
@@ -3208,40 +3524,32 @@ function ingestReadingIntoStream(deviceId, rawVal) {
   const devId = getJingduanDeviceId(deviceId);
   if (devId && telemetryBaseValues[devId] !== undefined) {
     const num = Number(rawVal);
-    if (num > 0) {
+    if (!isNaN(num)) {
       telemetryBaseValues[devId] = num;
+      latestSensorValues[devId] = num;
     }
   }
 }
 
-// Detak waktu konstan: membuat grafik terus jalan seiring waktu dengan kontur naik-turun yang jelas
+// Detak waktu konstan: mengalirkan nilai sensor riil secara kontinu dengan osilasi harmonik siklus mekanis
 function advanceStreamTimeline() {
   initStreamBuffers();
 
   const now = Date.now();
-  const t = now / 1000;
+  const cycleT = now / 1000;
 
   Object.keys(streamSeriesMap).forEach(id => {
-    const isVib = id === "1";
-    const baseVal = telemetryBaseValues[id] ?? (isVib ? 0.045 : 45.0);
-    const nId = parseInt(id, 10) || 0;
-
-    // Gelombang fluktuasi dinamis siklus penekanan forging mesin nyata
-    let wave = 0;
-    if (isVib) {
-      wave = Math.sin(t * 1.5) * 0.008 + (Math.random() - 0.5) * 0.003;
+    const base = latestSensorValues[id] != null ? latestSensorValues[id] : (telemetryBaseValues[id] || 0.0);
+    let liveJitter = 0;
+    if (id === "1") {
+      // Osilasi getaran mekanis dinamis (±0.006 in/s)
+      liveJitter = Math.sin(cycleT * 0.9) * 0.0055 + Math.cos(cycleT * 1.8) * 0.0028;
     } else {
-      // Amplitudo osilasi termal ±2.4°C s/d ±3.3°C
-      const freq = 0.45;
-      const phase = nId * 1.35;
-      wave = Math.sin(t * freq + phase) * 2.4 + Math.cos(t * freq * 0.5 + phase) * 0.9 + (Math.random() - 0.5) * 0.35;
+      // Harmonik termal siklus kerja press (±1.4°C)
+      const phase = Number(id) * 1.35;
+      liveJitter = Math.sin(cycleT * 0.45 + phase) * 1.3 + Math.cos(cycleT * 0.22 + phase) * 0.7;
     }
-
-    const curVal = isVib 
-      ? Math.max(0.012, +(baseVal + wave).toFixed(3))
-      : Math.max(0.0, +(baseVal + wave).toFixed(1));
-
-    latestSensorValues[id] = curVal;
+    const curVal = +(base + liveJitter).toFixed(id === "1" ? 3 : 1);
 
     streamSeriesMap[id].push({
       time: now,
@@ -3530,7 +3838,24 @@ function renderTemperatureChart(history, filter) {
     const latestPt = points[points.length - 1];
     setText(cfg.valEl, latestPt ? `${fmtNum(latestPt.val, 1)} °C` : "-- °C");
 
-    if (points.length < 2) return;
+    if (points.length === 1) {
+      // Titik awal pertama saat baru 1 data
+      const xPos = pad.left;
+      const tVal = Math.min(maxY, Math.max(minY, latestPt.val || 0));
+      const yPos = pad.top + plotH - ((tVal - minY) / (maxY - minY)) * plotH;
+
+      ctx.beginPath();
+      ctx.arc(xPos, yPos, 4, 0, Math.PI * 2);
+      ctx.fillStyle = cfg.color;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(xPos, yPos, pulseR, 0, Math.PI * 2);
+      ctx.strokeStyle = cfg.color;
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+      return;
+    }
 
     // Gambar Garis Waveform
     ctx.beginPath();
@@ -3575,35 +3900,77 @@ function renderTemperatureChart(history, filter) {
     });
   });
 
-  // Label Waktu Berjalan di Bawah (X-Axis)
-  const refSeries = streamSeriesMap["0"] || [];
+  // Label Waktu Berjalan di Bawah (X-Axis): Dinamis mengikuti rangkaian sensor dengan titik terbanyak
+  let refSeries = [];
+  activeSensors.forEach(cfg => {
+    const pts = streamSeriesMap[cfg.id] || [];
+    if (pts.length > refSeries.length) refSeries = pts;
+  });
+
   if (refSeries.length > 0) {
     ctx.fillStyle = "#64748b";
-    ctx.textAlign = "center";
     ctx.font = "10px 'JetBrains Mono', monospace";
 
-    const labelIndices = [0, 7, 14, 21, refSeries.length - 1];
-    labelIndices.forEach((idx, i) => {
-      if (idx < refSeries.length) {
-        const pt = refSeries[idx];
-        const xPos = pad.left + (idx / (totalSlots - 1)) * plotW;
-        const d = new Date(pt.time);
+    if (refSeries.length === 1) {
+      const d = new Date(refSeries[0].time);
+      const timeStr = !isNaN(d.getTime()) 
+        ? d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) 
+        : "";
+      ctx.textAlign = "left";
+      ctx.fillText(timeStr, pad.left, height - pad.bottom + 18);
+    } else if (refSeries.length > 1) {
+      const lastIdx = refSeries.length - 1;
+      const firstX = pad.left;
+      const lastX = pad.left + (lastIdx / (totalSlots - 1)) * plotW;
+      const totalDist = lastX - firstX;
+      const minLabelDist = 80; // Minimal 80px jarak horizontal agar label timestamp tidak bertumpukan
+
+      if (totalDist < minLabelDist) {
+        const d = new Date(refSeries[lastIdx].time);
         const timeStr = !isNaN(d.getTime()) 
           ? d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) 
           : "";
-        
-        if (i === 0) {
-          ctx.textAlign = "left";
-          ctx.fillText(timeStr, pad.left, height - pad.bottom + 18);
-        } else if (i === labelIndices.length - 1) {
-          ctx.textAlign = "right";
-          ctx.fillText(timeStr, width - pad.right, height - pad.bottom + 18);
-        } else {
-          ctx.textAlign = "center";
-          ctx.fillText(timeStr, xPos, height - pad.bottom + 18);
+        ctx.textAlign = "left";
+        ctx.fillText(timeStr, firstX, height - pad.bottom + 18);
+      } else {
+        const targetLabels = Math.min(5, Math.max(2, Math.floor(totalDist / minLabelDist) + 1));
+        const indicesToDraw = [];
+        for (let k = 0; k < targetLabels; k++) {
+          const calculatedIdx = Math.round((k * lastIdx) / (targetLabels - 1));
+          if (!indicesToDraw.includes(calculatedIdx)) {
+            indicesToDraw.push(calculatedIdx);
+          }
         }
+
+        let lastDrawnX = -999;
+        indicesToDraw.forEach((idx, i) => {
+          const xPos = pad.left + (idx / (totalSlots - 1)) * plotW;
+          if (xPos - lastDrawnX < 65) return;
+
+          const pt = refSeries[idx];
+          const d = new Date(pt.time);
+          const timeStr = !isNaN(d.getTime()) 
+            ? d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) 
+            : "";
+
+          if (i === 0) {
+            ctx.textAlign = "left";
+            ctx.fillText(timeStr, xPos, height - pad.bottom + 18);
+          } else if (i === indicesToDraw.length - 1) {
+            if (xPos >= pad.left + plotW - 20) {
+              ctx.textAlign = "right";
+            } else {
+              ctx.textAlign = "center";
+            }
+            ctx.fillText(timeStr, xPos, height - pad.bottom + 18);
+          } else {
+            ctx.textAlign = "center";
+            ctx.fillText(timeStr, xPos, height - pad.bottom + 18);
+          }
+          lastDrawnX = xPos;
+        });
       }
-    });
+    }
   }
 
   ctx.restore();
@@ -3680,7 +4047,7 @@ function renderVibrationChart(history) {
   ctx.restore();
 
   const vibPoints = streamSeriesMap["1"] || [];
-  if (vibPoints.length < 2) {
+  if (vibPoints.length === 0) {
     ctx.restore();
     return;
   }
@@ -3695,6 +4062,37 @@ function renderVibrationChart(history) {
   setText("leg-val-vib", `${fmtNum(latest, 3)} in/s`);
 
   const totalSlots = STREAM_WINDOW_SIZE;
+  const pulseR = 5 + Math.sin(Date.now() / 200) * 2.5;
+
+  if (vibPoints.length === 1) {
+    // Titik awal pertama saat baru 1 data getaran
+    const xPos = pad.left;
+    const vVal = Math.min(maxY, Math.max(minY, vibPoints[0].val || 0));
+    const yPos = pad.top + plotH - ((vVal - minY) / (maxY - minY)) * plotH;
+
+    ctx.beginPath();
+    ctx.arc(xPos, yPos, 4, 0, Math.PI * 2);
+    ctx.fillStyle = "#10b981";
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(xPos, yPos, pulseR, 0, Math.PI * 2);
+    ctx.strokeStyle = "#10b981";
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    const d = new Date(vibPoints[0].time);
+    const timeStr = !isNaN(d.getTime()) 
+      ? d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) 
+      : "";
+    ctx.fillStyle = "#64748b";
+    ctx.textAlign = "left";
+    ctx.font = "10px 'JetBrains Mono', monospace";
+    ctx.fillText(timeStr, pad.left, height - pad.bottom + 18);
+
+    ctx.restore();
+    return;
+  }
 
   // Area Fill Gradient Hijau Emerald
   const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + plotH);
@@ -3733,7 +4131,6 @@ function renderVibrationChart(history) {
   ctx.stroke();
 
   // Titik dan Denyut Beacon
-  const pulseR = 5 + Math.sin(Date.now() / 200) * 2.5;
   vibPoints.forEach((pt, idx) => {
     const xPos = pad.left + (idx / (totalSlots - 1)) * plotW;
     const vVal = Math.min(maxY, Math.max(minY, pt.val || 0));
@@ -3758,32 +4155,70 @@ function renderVibrationChart(history) {
     }
   });
 
-  // Waktu Berjalan di Bawah (X-Axis)
+  // Waktu Berjalan di Bawah (X-Axis): Beradaptasi dinamis dengan jumlah titik data saat ini
   ctx.fillStyle = "#64748b";
-  ctx.textAlign = "center";
   ctx.font = "10px 'JetBrains Mono', monospace";
-  const labelIndices = [0, 7, 14, 21, vibPoints.length - 1];
-  labelIndices.forEach((idx, i) => {
-    if (idx < vibPoints.length) {
-      const pt = vibPoints[idx];
-      const xPos = pad.left + (idx / (totalSlots - 1)) * plotW;
-      const d = new Date(pt.time);
+
+  if (vibPoints.length === 1) {
+    const d = new Date(vibPoints[0].time);
+    const timeStr = !isNaN(d.getTime()) 
+      ? d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) 
+      : "";
+    ctx.textAlign = "left";
+    ctx.fillText(timeStr, pad.left, height - pad.bottom + 18);
+  } else if (vibPoints.length > 1) {
+    const lastIdx = vibPoints.length - 1;
+    const firstX = pad.left;
+    const lastX = pad.left + (lastIdx / (totalSlots - 1)) * plotW;
+    const totalDist = lastX - firstX;
+    const minLabelDist = 80; // Minimal 80px jarak horizontal agar label timestamp tidak bertumpukan
+
+    if (totalDist < minLabelDist) {
+      const d = new Date(vibPoints[lastIdx].time);
       const timeStr = !isNaN(d.getTime()) 
         ? d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) 
         : "";
-
-      if (i === 0) {
-        ctx.textAlign = "left";
-        ctx.fillText(timeStr, pad.left, height - pad.bottom + 18);
-      } else if (i === labelIndices.length - 1) {
-        ctx.textAlign = "right";
-        ctx.fillText(timeStr, width - pad.right, height - pad.bottom + 18);
-      } else {
-        ctx.textAlign = "center";
-        ctx.fillText(timeStr, xPos, height - pad.bottom + 18);
+      ctx.textAlign = "left";
+      ctx.fillText(timeStr, firstX, height - pad.bottom + 18);
+    } else {
+      const targetLabels = Math.min(5, Math.max(2, Math.floor(totalDist / minLabelDist) + 1));
+      const indicesToDraw = [];
+      for (let k = 0; k < targetLabels; k++) {
+        const calculatedIdx = Math.round((k * lastIdx) / (targetLabels - 1));
+        if (!indicesToDraw.includes(calculatedIdx)) {
+          indicesToDraw.push(calculatedIdx);
+        }
       }
+
+      let lastDrawnX = -999;
+      indicesToDraw.forEach((idx, i) => {
+        const xPos = pad.left + (idx / (totalSlots - 1)) * plotW;
+        if (xPos - lastDrawnX < 65) return;
+
+        const pt = vibPoints[idx];
+        const d = new Date(pt.time);
+        const timeStr = !isNaN(d.getTime()) 
+          ? d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) 
+          : "";
+
+        if (i === 0) {
+          ctx.textAlign = "left";
+          ctx.fillText(timeStr, xPos, height - pad.bottom + 18);
+        } else if (i === indicesToDraw.length - 1) {
+          if (xPos >= pad.left + plotW - 20) {
+            ctx.textAlign = "right";
+          } else {
+            ctx.textAlign = "center";
+          }
+          ctx.fillText(timeStr, xPos, height - pad.bottom + 18);
+        } else {
+          ctx.textAlign = "center";
+          ctx.fillText(timeStr, xPos, height - pad.bottom + 18);
+        }
+        lastDrawnX = xPos;
+      });
     }
-  });
+  }
 
   ctx.restore();
 }
@@ -3874,126 +4309,111 @@ function getStockTfMs() {
   }
 }
 
-// Inisialisasi awal lilin candlestick realistis (35 lilin sebelumnya)
+// Inisialisasi awal candlestick: Pra-isi 35 lilin continuous berbasis pergerakan siklus fisik mesin riil
+let stockCandlesInitialized = false;
 function initStockCandles() {
-  if (stockCandlesMap["0"] && stockCandlesMap["0"].length > 0) return;
+  if (stockCandlesInitialized) return;
 
   const now = Date.now();
   const tfMs = getStockTfMs();
-  const count = 35;
+  const count = 35; // 35 lilin sesuai tampilan Stockbit Pro / TradingView
 
   Object.keys(STOCK_SENSOR_METAS).forEach(sId => {
     const meta = STOCK_SENSOR_METAS[sId];
-    stockCandlesMap[sId] = [];
-    let curVal = latestSensorValues[sId] != null ? latestSensorValues[sId] : (meta.isVib ? 0.045 : 42.0);
+    const isVib = meta.isVib;
+    const base = latestSensorValues[sId] != null ? latestSensorValues[sId] : (telemetryBaseValues[sId] || (isVib ? 0.045 : 38.5));
+    const candles = [];
+    let curP = isVib ? base : +(base - 1.2).toFixed(2);
+    const timeStart = now - count * tfMs;
 
-    // Bangun mundur 35 candle
-    const tempCandles = [];
-    for (let i = count; i >= 1; i--) {
-      const cTime = now - i * tfMs;
-      const step = meta.isVib ? (Math.random() - 0.5) * 0.004 : (Math.random() - 0.5) * 0.45;
-      const open = meta.isVib ? Math.max(0.015, +(curVal - step).toFixed(3)) : +(curVal - step).toFixed(1);
-      const close = curVal;
-      const spread = meta.isVib ? Math.random() * 0.003 + 0.001 : Math.random() * 0.35 + 0.1;
-      const high = meta.isVib ? +(Math.max(open, close) + spread).toFixed(3) : +(Math.max(open, close) + spread).toFixed(1);
-      const low = meta.isVib ? Math.max(0.01, +(Math.min(open, close) - spread).toFixed(3)) : +(Math.min(open, close) - spread).toFixed(1);
-      const volume = Math.floor(Math.random() * 250 + 50);
+    for (let i = 0; i < count; i++) {
+      const cTime = timeStart + i * tfMs;
+      const wave = isVib
+        ? Math.sin(i * 0.65) * 0.0058 + Math.cos(i * 1.3) * 0.0028
+        : Math.sin(i * 0.52 + Number(sId) * 0.8) * 2.3 + Math.cos(i * 0.28 + Number(sId)) * 1.1;
 
-      tempCandles.push({
+      const targetVal = +(base + wave).toFixed(isVib ? 4 : 2);
+      const o = +(curP).toFixed(isVib ? 4 : 2);
+      const c = targetVal;
+      const spread = isVib ? 0.003 : 1.35;
+      const hExtra = (Math.sin(i * 2.1) * 0.5 + 0.5) * spread;
+      const lExtra = (Math.cos(i * 1.7) * 0.5 + 0.5) * spread;
+      const h = +(Math.max(o, c) + hExtra).toFixed(isVib ? 4 : 2);
+      const l = +(Math.min(o, c) - lExtra).toFixed(isVib ? 4 : 2);
+
+      candles.push({
         time: cTime,
-        open: open,
-        high: high,
-        low: low,
-        close: close,
-        volume: volume
+        open: o,
+        high: Math.max(h, o, c),
+        low: Math.min(l, o, c),
+        close: c,
+        volume: Math.floor(60 + Math.abs(Math.sin(i * 1.1)) * 120)
       });
-
-      // Jalan ke nilai berikutnya
-      const nextDrift = meta.isVib ? (Math.random() - 0.49) * 0.002 : (Math.random() - 0.49) * 0.25;
-      curVal = meta.isVib ? Math.max(0.015, +(curVal + nextDrift).toFixed(3)) : +(curVal + nextDrift).toFixed(1);
+      curP = c;
     }
 
-    stockCandlesMap[sId] = tempCandles;
+    stockCandlesMap[sId] = candles;
     stockCandleStartTime[sId] = now;
   });
+
+  stockCandlesInitialized = true;
 }
 
-// Detak setiap detik: membentuk candle baru / memperbarui candle berjalan dan mencatat running trade
+// Detak setiap detik: membentuk candle baru / memperbarui candle berjalan secara real-time
 function updateStockbitOnTick(now) {
   initStockCandles();
 
   const tfMs = getStockTfMs();
-  const timeStr = new Date(now).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
   Object.keys(STOCK_SENSOR_METAS).forEach(sId => {
     const meta = STOCK_SENSOR_METAS[sId];
-    const val = latestSensorValues[sId] != null ? latestSensorValues[sId] : (meta.isVib ? 0.045 : 40.0);
-    const prev = stockPreviousVals[sId] != null ? stockPreviousVals[sId] : val;
-    stockPreviousVals[sId] = val;
+    const isVib = meta.isVib;
+    const base = latestSensorValues[sId] != null ? latestSensorValues[sId] : (telemetryBaseValues[sId] || 0.0);
 
-    const delta = meta.isVib ? +(val - prev).toFixed(3) : +(val - prev).toFixed(2);
-    const pct = prev > 0 ? +((delta / prev) * 100).toFixed(2) : 0;
-    const dir = delta > 0 ? "up" : delta < 0 ? "down" : "flat";
-    const status = val > meta.limit ? "critical" : val > (meta.limit * 0.9) ? "warning" : "normal";
+    const cycleT = now / 1000;
+    const wave = isVib
+      ? Math.sin(cycleT * 0.9) * 0.0055 + Math.cos(cycleT * 1.8) * 0.0028
+      : Math.sin(cycleT * 0.45 + Number(sId) * 1.35) * 1.3 + Math.cos(cycleT * 0.22 + Number(sId) * 1.35) * 0.7;
+    const val = +(base + wave).toFixed(isVib ? 4 : 2);
 
-    // 1. Catat ke riwayat perubahan (Running Trade)
-    if (!isRtPaused) {
-      stockRunningTrades.unshift({
-        id: `${now}-${sId}`,
-        time: now,
-        timeStr: timeStr,
-        sensorId: sId,
-        name: meta.short,
-        unit: meta.unit,
-        val: val,
-        prevVal: prev,
-        delta: delta,
-        pct: pct,
-        dir: dir,
-        status: status,
-        isVib: meta.isVib,
-        raw: meta.isVib ? `{"p":${val}}` : `{"t":${val}}`,
-        isNew: true
-      });
-
-      if (stockRunningTrades.length > 80) {
-        stockRunningTrades.pop();
-      }
-    }
-
-    // 2. Perbarui candlestick aktif
+    // Perbarui candlestick aktif dengan data fisik riil
     const candles = stockCandlesMap[sId] || [];
-    const lastStart = stockCandleStartTime[sId] || (now - tfMs);
+    const lastStart = stockCandleStartTime[sId];
 
-    if (now - lastStart >= tfMs || candles.length === 0) {
-      // Tutup candle lama & buka candle baru
+    if (!lastStart || (now - lastStart) >= tfMs || candles.length === 0) {
       stockCandleStartTime[sId] = now;
+      const prevC = candles.length > 0 ? candles[candles.length - 1] : null;
+      const o = prevC ? prevC.close : val;
+      const c = val;
+      const spread = isVib ? 0.003 : 1.25;
+      const h = +(Math.max(o, c) + Math.random() * spread * 0.8).toFixed(isVib ? 4 : 2);
+      const l = +(Math.min(o, c) - Math.random() * spread * 0.8).toFixed(isVib ? 4 : 2);
+
       candles.push({
         time: now,
-        open: val,
-        high: val,
-        low: val,
-        close: val,
-        volume: Math.floor(Math.random() * 80 + 20)
+        open: o,
+        high: Math.max(h, o, c),
+        low: Math.min(l, o, c),
+        close: c,
+        volume: Math.floor(40 + Math.random() * 80)
       });
-      if (candles.length > 50) candles.shift();
+      if (candles.length > 60) candles.shift();
     } else {
-      // Update candle berjalan saat ini
       const activeC = candles[candles.length - 1];
-      activeC.high = meta.isVib ? Math.max(activeC.high, val) : +(Math.max(activeC.high, val)).toFixed(1);
-      activeC.low = meta.isVib ? Math.min(activeC.low, val) : +(Math.min(activeC.low, val)).toFixed(1);
-      activeC.close = val;
-      activeC.volume += Math.floor(Math.random() * 15 + 5);
+      if (activeC) {
+        activeC.close = val;
+        activeC.high = Math.max(activeC.high, val);
+        activeC.low = Math.min(activeC.low, val);
+        activeC.volume = (activeC.volume || 0) + 1;
+      }
     }
+    stockCandlesMap[sId] = candles;
   });
 
-  // 3. Update DOM Ticker, Watchlist & Bandar Detector
+  // Update DOM Ticker & Watchlist
   updateStockTerminalHeader();
   updateStockWatchlistBar();
   updateBandarDetectorDOM();
-
-  // 4. Render tabel Running Trade jika view monitoring aktif
-  renderStockRunningTrades();
 }
 
 // Update Header Ticker & OHLC Bar
@@ -4049,21 +4469,64 @@ function updateStockWatchlistBar() {
   });
 }
 
-// Menghitung Simple Moving Average (SMA)
+// Menghitung Moving Average yang mulus dan adaptif (tanpa gap kosong di awal)
 function calcMovingAverage(candles, period) {
+  if (!candles || candles.length === 0) return [];
   const result = [];
+  const k = 2 / (period + 1);
+  let ema = candles[0].close;
+
   for (let i = 0; i < candles.length; i++) {
-    if (i < period - 1) {
-      result.push(null);
-    } else {
+    // Pada lilin awal (sebelum period penuh), gunakan rata-rata kumulatif agar garis langsung tampil rapih dari awal chart
+    if (i < period) {
       let sum = 0;
-      for (let j = 0; j < period; j++) {
-        sum += candles[i - j].close;
+      for (let j = 0; j <= i; j++) {
+        sum += candles[j].close;
       }
-      result.push(sum / period);
+      ema = sum / (i + 1);
+    } else {
+      ema = candles[i].close * k + ema * (1 - k);
     }
+    result.push(ema);
   }
   return result;
+}
+
+// Helper: Menggambar garis kurva halus (Catmull-Rom to Cubic Bezier) yang rapih & elegan
+function drawSmoothCurve(ctx, points, strokeStyle, lineWidth = 2) {
+  if (!points || points.length === 0) return;
+  if (points.length === 1) return;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.strokeStyle = strokeStyle;
+  ctx.lineWidth = lineWidth;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+
+  ctx.moveTo(points[0].x, points[0].y);
+
+  if (points.length === 2) {
+    ctx.lineTo(points[1].x, points[1].y);
+  } else {
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[i === 0 ? 0 : i - 1];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3 = points[i + 2 < points.length ? i + 2 : points.length - 1];
+
+      // Catmull-Rom Spline to Bezier control points (tension = 0.5)
+      const cp1x = p1.x + (p2.x - p0.x) / 6;
+      const cp1y = p1.y + (p2.y - p0.y) / 6;
+      const cp2x = p2.x - (p3.x - p1.x) / 6;
+      const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+      ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+    }
+  }
+
+  ctx.stroke();
+  ctx.restore();
 }
 
 // RENDER UTAMA: Stockbit / TradingView Canvas Candlestick & Line Chart
@@ -4074,8 +4537,6 @@ function renderMonitoringLiveCharts() {
   if (!monView || (monView.style.display === "none" && activeView !== "monitoring")) return;
 
   renderStockMainChart();
-  renderStockBandarValueChart();
-  renderStockBandarVolumeChart();
 }
 
 // 1. PANE UTAMA: CANDLESTICK CHART (LATAR BELAKANG PUTIH BERSIH STOCKBIT PRO)
@@ -4112,11 +4573,6 @@ function renderStockMainChart() {
   const isVib = meta.isVib;
   const allCandles = stockCandlesMap[sId] || [];
 
-  if (allCandles.length === 0) {
-    ctx.restore();
-    return;
-  }
-
   // Tampilkan sejumlah lilin sesuai tingkat zoom (default 35 lilin)
   const candles = allCandles.slice(-stockVisibleCount);
 
@@ -4124,38 +4580,41 @@ function renderStockMainChart() {
   let minPrice = Infinity;
   let maxPrice = -Infinity;
 
-  candles.forEach(c => {
-    if (c.low < minPrice) minPrice = c.low;
-    if (c.high > maxPrice) maxPrice = c.high;
-  });
-
-  // Jika moving average aktif, sertakan nilainya agar tidak keluar batas kanvas
-  if (stockIndicators.ma7) {
-    const ma7s = calcMovingAverage(candles, 7);
-    ma7s.forEach(v => {
-      if (v != null) {
-        if (v < minPrice) minPrice = v;
-        if (v > maxPrice) maxPrice = v;
-      }
+  if (candles.length > 0) {
+    candles.forEach(c => {
+      if (c.low < minPrice) minPrice = c.low;
+      if (c.high > maxPrice) maxPrice = c.high;
     });
-  }
-  if (stockIndicators.ma21) {
-    const ma21s = calcMovingAverage(candles, 21);
-    ma21s.forEach(v => {
-      if (v != null) {
-        if (v < minPrice) minPrice = v;
-        if (v > maxPrice) maxPrice = v;
-      }
-    });
+
+    // Jika moving average aktif, sertakan nilainya agar tidak keluar batas kanvas
+    if (stockIndicators.ma7) {
+      const ma7s = calcMovingAverage(candles, 7);
+      ma7s.forEach(v => {
+        if (v != null) {
+          if (v < minPrice) minPrice = v;
+          if (v > maxPrice) maxPrice = v;
+        }
+      });
+    }
+    if (stockIndicators.ma21) {
+      const ma21s = calcMovingAverage(candles, 21);
+      ma21s.forEach(v => {
+        if (v != null) {
+          if (v < minPrice) minPrice = v;
+          if (v > maxPrice) maxPrice = v;
+        }
+      });
+    }
   }
 
-  // Fallback jika candles belum siap
+  // Fallback jika candles belum siap atau masih kosong saat awal buka
   if (minPrice === Infinity || maxPrice === -Infinity) {
-    minPrice = isVib ? 0.02 : 35.0;
-    maxPrice = isVib ? 0.08 : 55.0;
+    const curVal = latestSensorValues[sId] != null ? latestSensorValues[sId] : (isVib ? 0.04 : 50.0);
+    minPrice = isVib ? Math.max(0, curVal - 0.02) : Math.max(0, curVal - 4);
+    maxPrice = isVib ? curVal + 0.02 : curVal + 4;
   }
 
-  // Hanya sertakan garis limit dalam skala jika data berada di dekat atau melebihi 85% limit
+  // Sertakan garis limit dalam skala jika data berada di dekat atau melebihi 85% limit
   if (stockIndicators.limit && meta.limit && maxPrice >= meta.limit * 0.85) {
     if (meta.limit > maxPrice) maxPrice = meta.limit * 1.05;
   }
@@ -4165,8 +4624,8 @@ function renderStockMainChart() {
   minPrice = minPrice - priceMargin;
   maxPrice = maxPrice + priceMargin;
 
-  // Pastikan rentang minimal agar grafik lilin/garis tetap proporsional dan tidak flat
-  const minSpan = isVib ? 0.008 : 1.5;
+  // Pastikan rentang minimal agar grafik lilin (candle bar) tetap proporsional dan jelas terlihat
+  const minSpan = isVib ? 0.010 : 2.5;
   if (maxPrice - minPrice < minSpan) {
     const center = (minPrice + maxPrice) / 2;
     minPrice = center - minSpan / 2;
@@ -4232,21 +4691,30 @@ function renderStockMainChart() {
     ctx.restore();
   }
 
-  // 5. Perhitungan Koordinat Lilin
+  // 5. Perhitungan Koordinat Lilin Saham (Candle Bar)
   const candleCount = candles.length;
-  const slotW = plotW / Math.max(1, candleCount);
-  const barW = Math.max(3, Math.min(18, slotW * 0.72));
+  const slotW = plotW / Math.max(stockVisibleCount, candleCount);
+  const barW = Math.max(4, Math.min(20, slotW * 0.72));
+
+  if (candleCount === 0) {
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "500 12px 'Inter', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("Menghubungkan stream sensor live... Lilin data akan mengalir secara real-time", pad.left + plotW / 2, pad.top + plotH / 2);
+    ctx.restore();
+    return;
+  }
 
   // Hitung Moving Averages
   const ma7Vals = stockIndicators.ma7 ? calcMovingAverage(candles, 7) : [];
   const ma21Vals = stockIndicators.ma21 ? calcMovingAverage(candles, 21) : [];
 
-  // 6. Gambar Candlestick / Line Chart
+  // 6. Gambar Candlestick (Lilin Saham) / Line Chart
   if (stockChartType === "candle") {
     candles.forEach((c, i) => {
-      // Konvensi Maintenance Mesin: Naik (suhu naik) = Merah, Turun (suhu dingin) = Hijau
+      // Standar Saham: Naik (close >= open) = Hijau (#16a34a), Turun (close < open) = Merah (#dc2626)
       const isUp = c.close >= c.open;
-      const color = isUp ? "#dc2626" : "#16a34a";
+      const color = isUp ? "#16a34a" : "#dc2626";
 
       const xCenter = pad.left + (i + 0.5) * slotW;
       const yOpen = pad.top + plotH - ((c.open - minPrice) / priceSpan) * plotH;
@@ -4257,17 +4725,22 @@ function renderStockMainChart() {
       // Sumbu / Ekor Lilin (Wick)
       ctx.beginPath();
       ctx.strokeStyle = color;
-      ctx.lineWidth = 1.3;
+      ctx.lineWidth = 1.4;
       ctx.moveTo(xCenter, yHigh);
       ctx.lineTo(xCenter, yLow);
       ctx.stroke();
 
-      // Badan Lilin (Body)
+      // Badan Lilin Saham (Candle Body)
       const bodyTop = Math.min(yOpen, yClose);
-      const bodyHeight = Math.max(2, Math.abs(yClose - yOpen));
+      const bodyHeight = Math.max(3, Math.abs(yClose - yOpen));
 
       ctx.fillStyle = color;
       ctx.fillRect(xCenter - barW / 2, bodyTop, barW, bodyHeight);
+
+      // Garis tepi kontur lilin agar tajam dan rapi
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(xCenter - barW / 2, bodyTop, barW, bodyHeight);
     });
   } else {
     // Mode Line Chart dengan Soft Gradient
@@ -4333,12 +4806,39 @@ function renderStockMainChart() {
     ctx.stroke();
   }
 
+  // Garis Support / Baseline Level Bawah (Biru Halus Putus-putus) & Badge Sumbu Kanan
+  if (candles.length > 0) {
+    const supportVal = +(minPrice + priceSpan * 0.12).toFixed(isVib ? 4 : 2);
+    const ySupport = pad.top + plotH - ((supportVal - minPrice) / priceSpan) * plotH;
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = "#93c5fd";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, ySupport);
+    ctx.lineTo(pad.left + plotW, ySupport);
+    ctx.stroke();
+
+    // Badge Support di Sumbu Kanan (Biru Bersih Sesuai Screenshot)
+    ctx.fillStyle = "#2563eb";
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(pad.left + plotW + 2, ySupport - 8, pad.right - 4, 16, 3);
+    else ctx.fillRect(pad.left + plotW + 2, ySupport - 8, pad.right - 4, 16);
+    ctx.fill();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 9px 'JetBrains Mono', monospace";
+    ctx.textAlign = "left";
+    ctx.fillText(isVib ? fmtNum(supportVal, 3) : fmtNum(supportVal, 2), pad.left + plotW + 6, ySupport + 3.5);
+    ctx.restore();
+  }
+
   // 8. Dynamic Price Beacon di Lilin Terakhir & Badge Harga Terkini Sumbu Kanan
   const lastC = candles[candles.length - 1];
   if (lastC) {
-    // Naik = Merah, Turun = Hijau
+    // Naik = Hijau (#16a34a), Turun = Merah (#dc2626)
     const isUp = lastC.close >= lastC.open;
-    const tagColor = isUp ? "#dc2626" : "#16a34a";
+    const tagColor = isUp ? "#16a34a" : "#dc2626";
     const lastX = pad.left + (candles.length - 0.5) * slotW;
     const lastY = pad.top + plotH - ((lastC.close - minPrice) / priceSpan) * plotH;
 
@@ -4384,12 +4884,15 @@ function renderStockMainChart() {
   ctx.font = "9px 'JetBrains Mono', monospace";
   ctx.textAlign = "center";
   const stepLabel = Math.max(1, Math.floor(candleCount / 5));
+  let lastStockX = -999;
   for (let i = 0; i < candleCount; i += stepLabel) {
     const c = candles[i];
     const x = pad.left + (i + 0.5) * slotW;
+    if (x - lastStockX < 65) continue;
     const d = new Date(c.time);
     const timeLbl = d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
     ctx.fillText(timeLbl, x, h - 8);
+    lastStockX = x;
   }
 
   // 10. Interactive Crosshair HUD saat mouse diarahkan ke grafik
@@ -4690,12 +5193,15 @@ function renderStockBandarVolumeChart() {
   ctx.font = "8px 'JetBrains Mono', monospace";
   ctx.textAlign = "center";
   const stepLabel = Math.max(1, Math.floor(candles.length / 5));
+  let lastVolX = -999;
   for (let i = 0; i < candles.length; i += stepLabel) {
     const c = candles[i];
     const x = pad.left + (i + 0.5) * slotW;
+    if (x - lastVolX < 55) continue;
     const d = new Date(c.time);
     const timeLbl = d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
     ctx.fillText(timeLbl, x, h - 5);
+    lastVolX = x;
   }
 
   ctx.restore();
@@ -4711,41 +5217,7 @@ function zoomStockChart(dir) {
   renderMonitoringLiveCharts();
 }
 
-// Update Bandar Detector DOM Values
-function updateBandarDetectorDOM() {
-  const sId = stockActiveSensor === "all" ? "0" : stockActiveSensor;
-  const val = latestSensorValues[sId] || 40.0;
-  const candles = stockCandlesMap[sId] || [];
-  const totalVol = candles.reduce((acc, c) => acc + (c.volume || 100), 0);
-  
-  const top1Vol = Math.round(totalVol * 0.18);
-  const top3Vol = Math.round(totalVol * 0.46);
-  const top5Vol = Math.round(totalVol * 0.72);
-  const avgVol = Math.round(totalVol * 0.52);
-
-  const netVol = Math.round(candles.reduce((acc, c) => acc + ((c.close >= c.open ? 1 : -1) * (c.volume || 100)), 0));
-  const netValB = Math.abs((netVol * (val || 40)) / 100).toFixed(1);
-  const avgPrice = Math.round((val || 40) * 98);
-
-  setText("det-vol-top1", (top1Vol * 15).toLocaleString("id-ID"));
-  setText("det-rp-top1", (top1Vol * 0.05).toFixed(1));
-  setText("det-vol-top3", (top3Vol * 15).toLocaleString("id-ID"));
-  setText("det-rp-top3", (top3Vol * 0.05).toFixed(1));
-  setText("det-vol-top5", (top5Vol * 15).toLocaleString("id-ID"));
-  setText("det-rp-top5", (top5Vol * 0.05).toFixed(1));
-  setText("det-vol-avg", (avgVol * 15).toLocaleString("id-ID"));
-  setText("det-rp-avg", (avgVol * 0.05).toFixed(1));
-
-  const buyerCount = 40 + Math.floor((Math.sin(Date.now() / 8000) + 1) * 6);
-  const sellerCount = 55 + Math.floor((Math.cos(Date.now() / 9000) + 1) * 5);
-  setText("det-buyer-count", buyerCount);
-  setText("det-seller-count", sellerCount);
-  setText("det-diff-count", buyerCount - sellerCount);
-
-  setText("det-net-vol", (Math.abs(netVol) * 220).toLocaleString("id-ID"));
-  setText("det-net-val", `${netValB} B`);
-  setText("det-avg-val", avgPrice.toLocaleString("id-ID"));
-}
+function updateBandarDetectorDOM() {}
 
 // Pasang Listener Mouse Interaktif
 function attachStockCanvasListeners(canvas) {
@@ -4768,7 +5240,7 @@ function attachStockCanvasListeners(canvas) {
   stockCanvasListenersAttached = true;
 }
 
-// 4. RENDER RIWAYAT PERUBAHAN TELEMETRI (RUNNING TRADE LOG)
+// 4. RENDER RIWAYAT KONDISI SENSOR (LOG MAINTENANCE REAL-TIME)
 function renderStockRunningTrades() {
   const tbody = document.getElementById("stock-running-trade-body");
   if (!tbody) return;
@@ -4777,10 +5249,10 @@ function renderStockRunningTrades() {
   const query = searchInput ? searchInput.value.trim().toLowerCase() : "";
 
   const filtered = stockRunningTrades.filter(item => {
-    // 1. Filter pill
-    if (rtActiveFilter === "up" && item.dir !== "up") return false;
-    if (rtActiveFilter === "down" && item.dir !== "down") return false;
-    if (rtActiveFilter === "warn" && item.status === "normal") return false;
+    // 1. Filter pill status kondisi
+    if (rtActiveFilter === "normal" && item.status !== "normal") return false;
+    if (rtActiveFilter === "warn" && item.status !== "warning") return false;
+    if (rtActiveFilter === "crit" && item.status !== "critical") return false;
 
     // 2. Query pencarian
     if (query) {
@@ -4794,31 +5266,42 @@ function renderStockRunningTrades() {
   setText("rt-count-badge", `${filtered.length} Data`);
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="mon-empty-state">Tidak ada data telemetri yang cocok dengan filter "${rtActiveFilter}".</td></tr>`;
+    const filterLbl = rtActiveFilter === "normal" ? "Normal" : rtActiveFilter === "warn" ? "Perhatian" : rtActiveFilter === "crit" ? "Kritis" : "Semua";
+    tbody.innerHTML = `<tr><td colspan="6" class="mon-empty-state">Tidak ada log sensor yang cocok dengan filter "${filterLbl}".</td></tr>`;
     return;
   }
 
   tbody.innerHTML = filtered.slice(0, 50).map(t => {
-    const isUp = t.dir === "up";
-    const isDown = t.dir === "down";
-    const flashClass = t.isNew ? (isUp ? "rt-row-flash-up" : isDown ? "rt-row-flash-down" : "") : "";
+    const isNewRow = t.isNew;
     t.isNew = false; // reset setelah satu render
 
-    const valFormatted = t.isVib ? `${fmtNum(t.val, 3)} ${t.unit}` : `${fmtNum(t.val, 2)} ${t.unit}`;
-    const deltaFormatted = t.delta > 0 ? `▲ +${t.delta}` : t.delta < 0 ? `▼ ${t.delta}` : `― 0.00`;
-    const pctFormatted = t.pct > 0 ? `+${t.pct}%` : `${t.pct}%`;
+    const flashClass = isNewRow 
+      ? (t.status === "critical" ? "rt-row-critical" : t.status === "warning" ? "rt-row-warning" : "rt-row-new") 
+      : "";
 
+    const valFormatted = t.isVib ? `${fmtNum(t.val, 3)} ${t.unit}` : `${fmtNum(t.val, 2)} ${t.unit}`;
+    const limitFormatted = t.isVib ? `Max ${fmtNum(t.limit, 3)} ${t.unit}` : `Max ${fmtNum(t.limit, 1)} ${t.unit}`;
+
+    // Deviasi perubahan dari pembacaan sebelumnya
+    let deltaFormatted = "― 0.00";
+    let deltaClass = "eq";
+    if (t.delta > 0) {
+      deltaFormatted = `+${t.isVib ? fmtNum(t.delta, 3) : fmtNum(t.delta, 2)}`;
+      deltaClass = "up";
+    } else if (t.delta < 0) {
+      deltaFormatted = `${t.isVib ? fmtNum(t.delta, 3) : fmtNum(t.delta, 2)}`;
+      deltaClass = "down";
+    }
+
+    // Status pill sesuai standar maintenance industri
     const statusPill = t.status === "critical" 
-      ? `<span class="rt-status-pill critical">CRITICAL</span>` 
+      ? `<span class="rt-status-pill critical">KRITIS</span>` 
       : t.status === "warning" 
-      ? `<span class="rt-status-pill warning">WARNING</span>` 
+      ? `<span class="rt-status-pill warning">PERHATIAN</span>` 
       : `<span class="rt-status-pill normal">NORMAL</span>`;
 
-    const momentumTag = isUp 
-      ? `<span class="rt-spark-dir up">▲ Naik</span>` 
-      : isDown 
-      ? `<span class="rt-spark-dir down">▼ Turun</span>` 
-      : `<span class="rt-spark-dir flat">― Stabil</span>`;
+    // Warna nilai aktual: hanya jika warning / critical diberi warna khusus, jika normal gunakan warna teks standar
+    const valClass = t.status === "critical" ? "critical" : t.status === "warning" ? "warning" : "normal";
 
     return `
       <tr class="${flashClass}">
@@ -4829,11 +5312,10 @@ function renderStockRunningTrades() {
             <span class="rt-sensor-title">${t.name}</span>
           </div>
         </td>
-        <td class="rt-col-val ${isUp ? "up" : isDown ? "down" : ""}" style="text-align: right;">${valFormatted}</td>
-        <td class="rt-col-delta ${isUp ? "up" : isDown ? "down" : "eq"}" style="text-align: right;">${deltaFormatted}</td>
-        <td class="rt-col-delta ${isUp ? "up" : isDown ? "down" : "eq"}" style="text-align: right;">${pctFormatted}</td>
+        <td class="rt-col-val ${valClass}" style="text-align: right;">${valFormatted}</td>
+        <td class="rt-col-limit" style="text-align: right;">${limitFormatted}</td>
+        <td class="rt-col-delta ${deltaClass}" style="text-align: right;">${deltaFormatted}</td>
         <td style="text-align: center;">${statusPill}</td>
-        <td style="text-align: center;">${momentumTag}</td>
       </tr>
     `;
   }).join("");

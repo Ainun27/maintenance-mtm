@@ -105,12 +105,14 @@ app.get("/api/mqtt-info", (req, res) => {
 
 // 4. Riwayat Telemetri dari PostgreSQL Timescale - EKSKLUSIF JINGDUAN
 app.get("/api/telemetry", async (req, res) => {
-  const limit = parseInt((req.query.limit as string) || "50", 10);
+  const limit = Math.min(parseInt((req.query.limit as string) || "50", 10), 1000);
   const deviceId = req.query.device as string | undefined;
+  const shift = req.query.shift as string | undefined;
+  const date = req.query.date as string | undefined;
 
   if (subscriberService.timescaleManager && subscriberService.timescaleManager.isConnected()) {
     try {
-      const data = await subscriberService.timescaleManager.getRecentTelemetry(limit, deviceId);
+      const data = await subscriberService.timescaleManager.getRecentTelemetry(limit, deviceId, shift, date);
       const filtered = (data || []).filter((r: any) => isJingduan(r.device_id));
       if (filtered.length > 0) return res.json(filtered);
     } catch {}
@@ -135,6 +137,23 @@ app.get("/api/telemetry", async (req, res) => {
     created_at: d.recorded_at,
   }));
   res.json(fallbackRows);
+});
+
+// 4B. Riwayat Telemetri Terkelompok Per Shift - Tidak Hilang Saat Pergantian Shift
+app.get("/api/telemetry/shifts", async (req, res) => {
+  const date = (req.query.date as string) || undefined;
+  if (subscriberService.timescaleManager && subscriberService.timescaleManager.isConnected()) {
+    try {
+      const data = await subscriberService.timescaleManager.getShiftTelemetry(date);
+      if (data) return res.json(data);
+    } catch (err: any) {
+      console.error("[API] getShiftTelemetry error:", err.message);
+    }
+  }
+
+  // Fallback ke in-memory subscriber buffers
+  const fallback = subscriberService.getShiftTelemetry(date);
+  res.json(fallback);
 });
 
 // 5. Log Real-time Ingestion - EKSKLUSIF JINGDUAN

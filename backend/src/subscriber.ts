@@ -40,7 +40,17 @@ export class MqttSubscriberService {
 
   private liveDevices: Map<string, LiveDeviceItem> = new Map();
   private recentTelemetryHistory: TelemetryData[] = [];
-  private maxTelemetryHistory = 100;
+  private maxTelemetryHistory = 1000;
+  private shiftBuffers: {
+    shift1: TelemetryData[];
+    shift2: TelemetryData[];
+    shift3: TelemetryData[];
+  } = {
+    shift1: [],
+    shift2: [],
+    shift3: [],
+  };
+  private maxShiftBuffer = 500;
   private totalMessagesReceived = 0;
   private lastMessageTimestamp: Date | null = null;
 
@@ -82,6 +92,46 @@ export class MqttSubscriberService {
       list = list.filter(t => t.device_id.toLowerCase().includes(deviceId.toLowerCase()));
     }
     return list.slice(0, limit);
+  }
+
+  public getShiftTelemetry(targetDate?: string): any {
+    const dateStr = targetDate || new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
+    const nowInJakarta = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
+    const mins = nowInJakarta.getHours() * 60 + nowInJakarta.getMinutes();
+    let activeShift: "shift1" | "shift2" | "shift3" = "shift1";
+    if (mins >= 0 && mins < 460) activeShift = "shift1";
+    else if (mins >= 450 && mins < 970) activeShift = "shift2";
+    else activeShift = "shift3";
+
+    const buildShiftObj = (code: string, title: string, timeLabel: string, items: TelemetryData[]) => {
+      const normalCount = items.filter(d => (d.status || "").toUpperCase() === "NORMAL").length;
+      const warningCount = items.filter(d => (d.status || "").toUpperCase() === "WARNING").length;
+      const criticalCount = items.filter(d => (d.status || "").toUpperCase() === "CRITICAL").length;
+      const totalCount = items.length;
+      const compliance = totalCount > 0 ? Math.round((normalCount / totalCount) * 100) : 100;
+      return {
+        code,
+        title,
+        timeLabel,
+        totalCount,
+        normalCount,
+        warningCount,
+        criticalCount,
+        compliance,
+        latestRec: items[0]?.recorded_at || null,
+        records: items.slice(0, 100)
+      };
+    };
+
+    return {
+      date: dateStr,
+      activeShift,
+      shifts: {
+        shift1: buildShiftObj("SHIFT-1", "Shift 1", "00:00 - 07:40", this.shiftBuffers.shift1),
+        shift2: buildShiftObj("SHIFT-2", "Shift 2", "07:30 - 16:10", this.shiftBuffers.shift2),
+        shift3: buildShiftObj("SHIFT-3", "Shift 3", "16:10 - 00:00", this.shiftBuffers.shift3)
+      }
+    };
   }
 
   public getMqttDetails() {
@@ -220,8 +270,13 @@ export class MqttSubscriberService {
         humidity = payload.data.humidity;
       }
 
-      if (!payload.status && temperature !== null) {
-        status = temperature > 75 ? "WARNING" : "NORMAL";
+      if (!payload.status) {
+        if (typeof payload.data.Z_RMS_Vel_in === "number" || typeof payload.data.vibration === "number") {
+          const vibVal = pressure ?? 0;
+          status = vibVal > 0.10 ? "CRITICAL" : vibVal > 0.08 ? "WARNING" : "NORMAL";
+        } else if (temperature !== null) {
+          status = temperature > 75 ? "CRITICAL" : temperature > 67.5 ? "WARNING" : "NORMAL";
+        }
       }
     } else {
       if (typeof payload.temperature === "number") temperature = payload.temperature;
@@ -261,6 +316,22 @@ export class MqttSubscriberService {
     if (this.recentTelemetryHistory.length > this.maxTelemetryHistory) {
       this.recentTelemetryHistory.pop();
     }
+
+    // Simpan ke shift-partitioned buffer agar riwayat per shift tidak hilang saat pergantian shift
+    try {
+      const recDate = new Date(telemetry.recorded_at || Date.now());
+      const nowInJakarta = new Date(recDate.toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
+      const mins = nowInJakarta.getHours() * 60 + nowInJakarta.getMinutes();
+      let shiftKey: "shift1" | "shift2" | "shift3" = "shift1";
+      if (mins >= 0 && mins < 460) shiftKey = "shift1";
+      else if (mins >= 450 && mins < 970) shiftKey = "shift2";
+      else shiftKey = "shift3";
+
+      this.shiftBuffers[shiftKey].unshift(telemetry);
+      if (this.shiftBuffers[shiftKey].length > this.maxShiftBuffer) {
+        this.shiftBuffers[shiftKey].pop();
+      }
+    } catch {}
 
     // 1. Simpan time-series ke PostgreSQL Timescale
     // 2. Simpan status pemantauan ke PostgreSQL Monitoring
